@@ -56,7 +56,13 @@ def _unique_checkpoint_paths(checkpoint_dir: str, image_count: int, now=None):
     )
 
 class Trainer:
-    def __init__(self, config: dict, model: torch.nn.Module, loss_fn: torch.nn.Module):
+    def __init__(
+        self,
+        config: dict,
+        model: torch.nn.Module,
+        loss_fn: torch.nn.Module,
+        resume_checkpoint: Optional[str] = None,
+    ):
         self.config = config
         self.model = model
         self.loss_fn = loss_fn
@@ -110,24 +116,81 @@ class Trainer:
         self.checkpoint_dir = os.path.join(self.output_dir, 'checkpoints')
         os.makedirs(self.checkpoint_dir, exist_ok=True)
         image_count = _dataset_image_count(config, self.output_dir)
-        self.best_checkpoint_path, self.last_checkpoint_path = _unique_checkpoint_paths(
-            self.checkpoint_dir, image_count
-        )
+        
+        self.start_epoch = 1
+        self.resumed_best_metric = None
+        
+        if resume_checkpoint and os.path.exists(resume_checkpoint):
+            logger.info("Resuming training from checkpoint: %s", resume_checkpoint)
+            state = load_checkpoint(
+                resume_checkpoint,
+                self.model,
+                self.optimizer,
+                self.scheduler,
+                self.scaler,
+            )
+            self.start_epoch = state.get('epoch', 0) + 1
+            
+            dir_name = os.path.dirname(resume_checkpoint)
+            file_name = os.path.basename(resume_checkpoint)
+            if file_name.startswith('last_'):
+                best_candidate = os.path.join(dir_name, 'best_' + file_name[5:])
+                self.last_checkpoint_path = resume_checkpoint
+                self.best_checkpoint_path = (
+                    best_candidate if os.path.exists(best_candidate) else os.path.join(dir_name, f"best_{file_name}")
+                )
+            elif file_name.startswith('best_'):
+                last_candidate = os.path.join(dir_name, 'last_' + file_name[5:])
+                self.best_checkpoint_path = resume_checkpoint
+                self.last_checkpoint_path = last_candidate
+            else:
+                self.best_checkpoint_path = os.path.join(dir_name, f"best_{file_name}")
+                self.last_checkpoint_path = resume_checkpoint
+                
+            if os.path.exists(self.best_checkpoint_path):
+                try:
+                    best_state = torch.load(self.best_checkpoint_path, map_location='cpu', weights_only=False)
+                    self.resumed_best_metric = best_state.get('metrics', {}).get(self.monitor)
+                    logger.info(
+                        "Loaded best metric from '%s': %s (target=%s)",
+                        self.best_checkpoint_path, self.resumed_best_metric, self.monitor
+                    )
+                except Exception as exc:
+                    logger.warning("Could not read best metric from %s: %s", self.best_checkpoint_path, exc)
+        else:
+            self.best_checkpoint_path, self.last_checkpoint_path = _unique_checkpoint_paths(
+                self.checkpoint_dir, image_count
+            )
+            
         logger.info("Best checkpoint for this run: %s", self.best_checkpoint_path)
         logger.info("Last checkpoint for this run: %s", self.last_checkpoint_path)
         
         self.evaluator = Evaluator(self.device, loss_fn)
         
     def fit(self, train_loader: DataLoader, val_loader: DataLoader) -> List[Dict[str, Any]]:
-        best_metric = -float('inf') if self.monitor_mode == 'max' else float('inf')
+        import gc
+        
+        if self.resumed_best_metric is not None:
+            best_metric = float(self.resumed_best_metric)
+        else:
+            best_metric = -float('inf') if self.monitor_mode == 'max' else float('inf')
+            
         epochs_no_improve = 0
         history = []
+        history_path = os.path.join(self.output_dir, 'history.json')
+        if os.path.exists(history_path):
+            try:
+                with open(history_path, 'r', encoding='utf-8') as f:
+                    history = json.load(f)
+                history = [h for h in history if h.get('epoch', 0) < self.start_epoch]
+            except Exception:
+                history = []
         
-        logger.info(f"Starting training on device: {self.device}")
+        logger.info(f"Starting training on device: {self.device} (epochs {self.start_epoch} to {self.epochs})")
         if len(train_loader) == 0 or len(val_loader) == 0:
             raise ValueError("Train and validation loaders must both contain at least one batch.")
         
-        for epoch in range(1, self.epochs + 1):
+        for epoch in range(self.start_epoch, self.epochs + 1):
             self.model.train()
             train_loss = 0.0
             
@@ -224,6 +287,11 @@ class Trainer:
                 filepath=self.last_checkpoint_path
             )
             
+            # Force garbage collection and free PyTorch GPU cache at each epoch
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
             if epochs_no_improve >= self.patience:
                 logger.info(f"Early stopping triggered after {epoch} epochs of no improvement.")
                 break

@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 def main():
     parser = argparse.ArgumentParser(description="Train the Sugarcane Row AI model.")
     parser.add_argument('--config', type=str, default='configs/unet_resnet34.yaml', help="Path to config YAML.")
+    parser.add_argument('--resume', type=str, default=None, help="Path to checkpoint .pt to resume training from.")
     args = parser.parse_args()
     
     config = load_config(args.config)
@@ -67,18 +68,20 @@ def main():
     batch_size = train_cfg.get('batch_size', 8)
     num_workers = train_cfg.get('num_workers', 4)
     
-    # Avoid windows multi-processing issues by enforcing 0 workers if running on CPU or Windows in some configurations,
-    # but let's default to config settings and fallback to 0 if needed.
+    # On Windows, num_workers=0 and pin_memory=False prevents multiprocessing lockups
+    # and avoids C-level memory corruption (0xc0000005) in Python 3.12.
+    pin_memory = True
     if os.name == 'nt':
-        logger.info("Windows detected: setting DataLoader num_workers to 0 to prevent multiprocessing lockups.")
+        logger.info("Windows detected: setting DataLoader num_workers=0 and pin_memory=False to prevent driver heap corruption.")
         num_workers = 0
+        pin_memory = False
         
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
-        pin_memory=True,
+        pin_memory=pin_memory,
         drop_last=True
     )
     
@@ -87,7 +90,7 @@ def main():
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
-        pin_memory=True
+        pin_memory=pin_memory
     )
     
     logger.info(f"Loaded {len(train_dataset)} training tiles and {len(val_dataset)} validation tiles.")
@@ -97,7 +100,7 @@ def main():
     loss_fn = CombinedLoss(config)
     
     # 5. Trainer
-    trainer = Trainer(config, model, loss_fn)
+    trainer = Trainer(config, model, loss_fn, resume_checkpoint=args.resume)
     
     # 6. Fit
     trainer.fit(train_loader, val_loader)

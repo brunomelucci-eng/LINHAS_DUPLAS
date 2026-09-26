@@ -28,14 +28,13 @@ class SugarcaneDataset(Dataset):
         
     def __getitem__(self, idx: int) -> tuple:
         filepath = os.path.join(self.dataset_dir, self.filenames[idx])
-        data = np.load(filepath)
-        
-        image = data['image'] # (C, H, W)
-        row_mask = data['row_mask'] # (H, W)
-        center_mask = data['center_mask'] # (H, W)
-        orientation_sin = data['orientation_sin'] # (H, W)
-        orientation_cos = data['orientation_cos'] # (H, W)
-        valid_mask = data['valid_mask'] # (H, W)
+        with np.load(filepath) as data:
+            image = np.array(data['image'], copy=True) # (C, H, W)
+            row_mask = np.array(data['row_mask'], copy=True) # (H, W)
+            center_mask = np.array(data['center_mask'], copy=True) # (H, W)
+            orientation_sin = np.array(data['orientation_sin'], copy=True) # (H, W)
+            orientation_cos = np.array(data['orientation_cos'], copy=True) # (H, W)
+            valid_mask = np.array(data['valid_mask'], copy=True) if 'valid_mask' in data else np.ones_like(center_mask)
         
         if self.augmentor is not None:
             image, row_mask, center_mask, orientation_sin, orientation_cos, valid_mask = self.augmentor(
