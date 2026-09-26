@@ -1,229 +1,229 @@
 {
   "status": "approved",
-  "center_threshold": 0.38,
-  "validation_dice": 0.7621258710713035,
-  "predicted_fraction": 0.18001175884486573,
+  "center_threshold": 0.34,
+  "validation_dice": 0.7669390100918391,
+  "predicted_fraction": 0.17854105138733217,
   "target_fraction": 0.15180565668669094,
-  "predicted_to_target_ratio": 1.1858040258433113,
+  "predicted_to_target_ratio": 1.1761159319367127,
   "minimum_validation_dice": 0.3,
   "failure_reason": null,
   "checkpoint": "C:\\Users\\BRUNO\\Documents\\python\\LINHAS_DUPLAS\\outputs_all_annotations_rowgraphnet\\checkpoints\\best_26_09_2026_16_imagens_run_003.pt",
   "threshold_candidates": [
     {
       "threshold": 0.3,
-      "dice": 0.761154167662468,
-      "predicted_fraction": 0.18776271500417052,
-      "predicted_to_target_ratio": 1.2368624404536568,
+      "dice": 0.7666949767692093,
+      "predicted_fraction": 0.18216822577946187,
+      "predicted_to_target_ratio": 1.2000094710267333,
       "eligible": true
     },
     {
       "threshold": 0.32,
-      "dice": 0.7615330139236319,
-      "predicted_fraction": 0.1857563397638815,
-      "predicted_to_target_ratio": 1.2236457047661984,
+      "dice": 0.7668586448678516,
+      "predicted_fraction": 0.18033641731873654,
+      "predicted_to_target_ratio": 1.18794267127298,
       "eligible": true
     },
     {
       "threshold": 0.34,
-      "dice": 0.7618105685795299,
-      "predicted_fraction": 0.18380639434664592,
-      "predicted_to_target_ratio": 1.2108006931915636,
+      "dice": 0.7669390100918391,
+      "predicted_fraction": 0.17854105138733217,
+      "predicted_to_target_ratio": 1.1761159319367127,
       "eligible": true
     },
     {
       "threshold": 0.36,
-      "dice": 0.7619901631754287,
-      "predicted_fraction": 0.1818881127918306,
-      "predicted_to_target_ratio": 1.1981642631883362,
+      "dice": 0.7669286873867132,
+      "predicted_fraction": 0.17680149197460293,
+      "predicted_to_target_ratio": 1.164656810776824,
       "eligible": true
     },
     {
       "threshold": 0.38,
-      "dice": 0.7621258710713035,
-      "predicted_fraction": 0.18001175884486573,
-      "predicted_to_target_ratio": 1.1858040258433113,
+      "dice": 0.7668850838166862,
+      "predicted_fraction": 0.17508636609350506,
+      "predicted_to_target_ratio": 1.1533586423255806,
       "eligible": true
     },
     {
       "threshold": 0.4,
-      "dice": 0.7621078561322135,
-      "predicted_fraction": 0.17815028109573086,
-      "predicted_to_target_ratio": 1.1735417835147746,
+      "dice": 0.7667727179801697,
+      "predicted_fraction": 0.17340963576211363,
+      "predicted_to_target_ratio": 1.1423133995593509,
       "eligible": true
     },
     {
       "threshold": 0.42,
-      "dice": 0.7620269604913107,
-      "predicted_fraction": 0.176326367823798,
-      "predicted_to_target_ratio": 1.161526992289325,
+      "dice": 0.7665646628402817,
+      "predicted_fraction": 0.1717572974087284,
+      "predicted_to_target_ratio": 1.1314288357726703,
       "eligible": true
     },
     {
       "threshold": 0.44,
-      "dice": 0.7618735577237752,
-      "predicted_fraction": 0.1745165412308159,
-      "predicted_to_target_ratio": 1.1496049952275331,
+      "dice": 0.7662648530884433,
+      "predicted_fraction": 0.17011202317163113,
+      "predicted_to_target_ratio": 1.1205908059323664,
       "eligible": true
     },
     {
       "threshold": 0.46,
-      "dice": 0.7616193347656274,
-      "predicted_fraction": 0.17272188171104033,
-      "predicted_to_target_ratio": 1.1377829092859038,
+      "dice": 0.7658140021245691,
+      "predicted_fraction": 0.16848619603113846,
+      "predicted_to_target_ratio": 1.1098808813091476,
       "eligible": true
     },
     {
       "threshold": 0.48,
-      "dice": 0.7612271014847491,
-      "predicted_fraction": 0.17092044895035335,
-      "predicted_to_target_ratio": 1.1259162055015717,
+      "dice": 0.7653356546006409,
+      "predicted_fraction": 0.16683689109239452,
+      "predicted_to_target_ratio": 1.0990162997464994,
       "eligible": true
     },
     {
       "threshold": 0.5,
-      "dice": 0.7608198756605823,
-      "predicted_fraction": 0.16910185454244908,
-      "predicted_to_target_ratio": 1.113936451600453,
+      "dice": 0.7647771984986953,
+      "predicted_fraction": 0.16519992758034197,
+      "predicted_to_target_ratio": 1.088233015725463,
       "eligible": true
     },
     {
       "threshold": 0.52,
-      "dice": 0.7602558401044925,
-      "predicted_fraction": 0.16728525470855554,
-      "predicted_to_target_ratio": 1.1019698366959585,
+      "dice": 0.764142195641091,
+      "predicted_fraction": 0.16354517911669375,
+      "predicted_to_target_ratio": 1.0773325756511947,
       "eligible": true
     },
     {
       "threshold": 0.54,
-      "dice": 0.7595949927596822,
-      "predicted_fraction": 0.16545726918135079,
-      "predicted_to_target_ratio": 1.0899282200190679,
+      "dice": 0.7634157536147319,
+      "predicted_fraction": 0.16189574951707417,
+      "predicted_to_target_ratio": 1.0664671729012574,
       "eligible": true
     },
     {
       "threshold": 0.56,
-      "dice": 0.7588124927708142,
-      "predicted_fraction": 0.16361785640720958,
-      "predicted_to_target_ratio": 1.0778113278406853,
+      "dice": 0.7625687063712129,
+      "predicted_fraction": 0.16021831277405396,
+      "predicted_to_target_ratio": 1.0554172767403902,
       "eligible": true
     },
     {
       "threshold": 0.58,
-      "dice": 0.7578803252963505,
-      "predicted_fraction": 0.1617214320592618,
-      "predicted_to_target_ratio": 1.0653188793421304,
+      "dice": 0.7615944251095039,
+      "predicted_fraction": 0.15850725914822797,
+      "predicted_to_target_ratio": 1.0441459337405874,
       "eligible": true
     },
     {
       "threshold": 0.6,
-      "dice": 0.7568193183682124,
-      "predicted_fraction": 0.1597954215301549,
-      "predicted_to_target_ratio": 1.0526315357269849,
+      "dice": 0.7605476792661411,
+      "predicted_fraction": 0.15676046940470983,
+      "predicted_to_target_ratio": 1.0326391837179365,
       "eligible": true
     },
     {
       "threshold": 0.62,
-      "dice": 0.7556291120540085,
-      "predicted_fraction": 0.15782137501028973,
-      "predicted_to_target_ratio": 1.0396277612764755,
+      "dice": 0.7593186416719334,
+      "predicted_fraction": 0.15497569964773744,
+      "predicted_to_target_ratio": 1.0208822453012347,
       "eligible": true
     },
     {
       "threshold": 0.64,
-      "dice": 0.7542428658737248,
-      "predicted_fraction": 0.15578707573385053,
-      "predicted_to_target_ratio": 1.0262270796362798,
+      "dice": 0.7579884496593247,
+      "predicted_fraction": 0.15314218748837796,
+      "predicted_to_target_ratio": 1.0088042226545317,
       "eligible": true
     },
     {
       "threshold": 0.66,
-      "dice": 0.7526792173374357,
-      "predicted_fraction": 0.1536639348066836,
-      "predicted_to_target_ratio": 1.012241165188119,
+      "dice": 0.7565088967937373,
+      "predicted_fraction": 0.15125045870008044,
+      "predicted_to_target_ratio": 0.9963427055438627,
       "eligible": true
     },
     {
       "threshold": 0.68,
-      "dice": 0.7509216353408157,
-      "predicted_fraction": 0.15148224482157682,
-      "predicted_to_target_ratio": 0.9978695664432216,
+      "dice": 0.7548228382859418,
+      "predicted_fraction": 0.14929806161895667,
+      "predicted_to_target_ratio": 0.9834815439525442,
       "eligible": true
     },
     {
       "threshold": 0.7,
-      "dice": 0.7489510972202281,
-      "predicted_fraction": 0.14919883156192307,
-      "predicted_to_target_ratio": 0.9828278788704952,
+      "dice": 0.7529398163715966,
+      "predicted_fraction": 0.14724365038790932,
+      "predicted_to_target_ratio": 0.9699483774297221,
       "eligible": true
     },
     {
       "threshold": 0.72,
-      "dice": 0.7466479066899914,
-      "predicted_fraction": 0.14677833289265713,
-      "predicted_to_target_ratio": 0.9668831590089584,
+      "dice": 0.7506976203856175,
+      "predicted_fraction": 0.14508024399790087,
+      "predicted_to_target_ratio": 0.9556972194872123,
       "eligible": true
     },
     {
       "threshold": 0.74,
-      "dice": 0.7440564732936756,
-      "predicted_fraction": 0.1442490468325562,
-      "predicted_to_target_ratio": 0.9502218163732153,
+      "dice": 0.7481675123867813,
+      "predicted_fraction": 0.14280190028052436,
+      "predicted_to_target_ratio": 0.9406889268642389,
       "eligible": true
     },
     {
       "threshold": 0.76,
-      "dice": 0.7409731002594756,
-      "predicted_fraction": 0.14154723012052753,
-      "predicted_to_target_ratio": 0.9324239505294879,
+      "dice": 0.7452761067736109,
+      "predicted_fraction": 0.14038696979703838,
+      "predicted_to_target_ratio": 0.924780886701611,
       "eligible": true
     },
     {
       "threshold": 0.78,
-      "dice": 0.7373341892446172,
-      "predicted_fraction": 0.13864674552630554,
-      "predicted_to_target_ratio": 0.9133173858761808,
+      "dice": 0.7418740145820335,
+      "predicted_fraction": 0.1377867101450558,
+      "predicted_to_target_ratio": 0.9076520147693271,
       "eligible": true
     },
     {
       "threshold": 0.8,
-      "dice": 0.7329873433502944,
-      "predicted_fraction": 0.1354991415228797,
-      "predicted_to_target_ratio": 0.8925829542869672,
+      "dice": 0.7379775413750977,
+      "predicted_fraction": 0.1349689172650285,
+      "predicted_to_target_ratio": 0.8890901710177275,
       "eligible": true
     },
     {
       "threshold": 0.82,
-      "dice": 0.7277549880832973,
-      "predicted_fraction": 0.13201927473216715,
-      "predicted_to_target_ratio": 0.8696597848434557,
+      "dice": 0.7332241444363462,
+      "predicted_fraction": 0.131893907444868,
+      "predicted_to_target_ratio": 0.8688339441598119,
       "eligible": true
     },
     {
       "threshold": 0.84,
-      "dice": 0.7212763699537443,
-      "predicted_fraction": 0.12816376316943462,
-      "predicted_to_target_ratio": 0.8442621043690722,
+      "dice": 0.727456440899333,
+      "predicted_fraction": 0.12846053916078048,
+      "predicted_to_target_ratio": 0.8462170775750997,
       "eligible": true
     },
     {
       "threshold": 0.86,
-      "dice": 0.7131171827514001,
-      "predicted_fraction": 0.12377337334282584,
-      "predicted_to_target_ratio": 0.8153409829666596,
+      "dice": 0.7203803325278694,
+      "predicted_fraction": 0.1245946391917421,
+      "predicted_to_target_ratio": 0.8207509648266323,
       "eligible": true
     },
     {
       "threshold": 0.88,
-      "dice": 0.7026088335385106,
-      "predicted_fraction": 0.11863348077806171,
-      "predicted_to_target_ratio": 0.7814826098536453,
+      "dice": 0.7112419379489531,
+      "predicted_fraction": 0.12007971315033865,
+      "predicted_to_target_ratio": 0.7910094773225024,
       "eligible": true
     },
     {
       "threshold": 0.9,
-      "dice": 0.6882657890313088,
-      "predicted_fraction": 0.11244253081689565,
-      "predicted_to_target_ratio": 0.7407005329779235,
+      "dice": 0.699033114340596,
+      "predicted_fraction": 0.11464603645524472,
+      "predicted_to_target_ratio": 0.7552158394983969,
       "eligible": true
     }
   ]
