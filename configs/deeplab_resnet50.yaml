@@ -1,0 +1,7 @@
+# DeepLabv3+ configuration with ResNet50 backbone
+model:
+  architecture: deeplab
+  encoder: resnet50
+  pretrained: true
+  input_channels: 3
+  output_channels: 4

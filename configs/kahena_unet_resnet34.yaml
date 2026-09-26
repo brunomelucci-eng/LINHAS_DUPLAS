@@ -1,0 +1,14 @@
+# UNet configuration for Kahena dataset
+model:
+  architecture: unet
+  encoder: resnet34
+  pretrained: true
+  input_channels: 3
+  output_channels: 4
+
+input:
+  orthomosaic: data/IMAGE/Kahena.gpkg
+  roi: data/TALHOES/Kahena_talhoes.geojson
+  reference_lines: data/LINHAS/Kahena_LINHAS.geojson
+  id_field: FID_linhas
+  group_field: Id

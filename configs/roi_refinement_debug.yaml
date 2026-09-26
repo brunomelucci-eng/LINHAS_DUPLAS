@@ -1,0 +1,11 @@
+# Overlay seguro para validar o refinamento em uma ROI pequena.
+project:
+  output_dir: outputs/roi_refinement_debug
+
+debug:
+  enabled: true
+  save_probability: true
+  save_weights: false
+  save_masks: true
+  save_skeleton: true
+  save_tile_grid: true

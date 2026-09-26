@@ -1,0 +1,65 @@
+# Treinamento com a arquitetura RowGraphNet (SegFormer + MultiTaskDecoder + ConnectivityRefiner)
+# Portada de linhas_simples_pytorch para LINHAS_DUPLAS
+project:
+  name: sugarcane_rows_all_annotations_rowgraphnet
+  output_dir: outputs_all_annotations_rowgraphnet
+
+dataset:
+  existing_output_policy: replace
+
+tiling:
+  tile_size_px: 512
+  overlap_px: 256
+  include_empty_tiles_ratio: 0.20
+
+negative_sampling:
+  mode: unlabeled_empty
+  min_line_distance_m: 0.50
+
+dataset_quality:
+  min_source_images: 15
+  min_train_tiles: 50
+  min_val_tiles: 10
+  min_test_tiles: 10
+  min_hard_negative_tiles: 0
+  min_background_pixel_fraction: 0.70
+
+model:
+  architecture: rowgraphnet
+  encoder: mit_b2
+  pretrained: true
+  input_channels: 3
+  output_channels: 4
+  decoder_channels: 128
+  refine_connectivity: true
+  refiner_hidden_channels: 64
+
+training:
+  epochs: 120
+  batch_size: 6
+  gradient_accumulation_steps: 2
+  mixed_precision: true
+  num_workers: 2
+  optimizer: adamw
+  learning_rate: 0.0001
+  weight_decay: 0.01
+  gradient_clip_norm: 1.0
+  scheduler: cosine
+  early_stopping_patience: 12
+  monitor: val_center_dice
+  monitor_mode: max
+  threshold_calibration:
+    enabled: true
+    min_threshold: 0.30
+    max_threshold: 0.90
+    threshold_step: 0.02
+    minimum_validation_dice: 0.30
+    max_predicted_fraction: 0.25
+    min_predicted_to_target_ratio: 0.25
+    max_predicted_to_target_ratio: 3.00
+    fail_on_rejected: true
+
+inference:
+  threshold_calibration:
+    enabled: true
+    required: true

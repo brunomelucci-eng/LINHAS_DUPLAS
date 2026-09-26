@@ -1,0 +1,14 @@
+# UNet configuration for Portao dataset
+model:
+  architecture: unet
+  encoder: resnet34
+  pretrained: true
+  input_channels: 3
+  output_channels: 4
+
+input:
+  orthomosaic: data/IMAGE/Portao.gpkg
+  roi: data/TALHOES/portao_talhao.geojson
+  reference_lines: data/LINHAS/portao_linhas.geojson
+  id_field: Id
+  group_field: Id

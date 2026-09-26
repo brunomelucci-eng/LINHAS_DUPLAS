@@ -1,0 +1,24 @@
+# Versoes de runtime e treinamento validadas no Windows com Python 3.12.
+# Torch e torchvision sao instalados separadamente pelo INSTALAR_WINDOWS.ps1.
+segmentation-models-pytorch==0.5.0
+opencv-contrib-python==5.0.0.93
+rasterio==1.5.0
+geopandas==1.1.4
+shapely==2.1.2
+pyproj==3.7.2
+fiona==1.10.1
+pyogrio==0.13.0
+albumentations==2.0.8
+numpy==2.4.4
+pandas==3.0.3
+scipy==1.18.0
+scikit-image==0.26.0
+scikit-learn==1.9.0
+networkx==3.6.1
+matplotlib==3.11.0
+tqdm==4.68.4
+PyYAML==6.0.3
+tensorboard==2.21.0
+rich==15.0.0
+psutil==7.2.2
+pytest==9.1.1

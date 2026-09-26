@@ -1,0 +1,14 @@
+# UNet configuration for SETE dataset
+model:
+  architecture: unet
+  encoder: resnet34
+  pretrained: true
+  input_channels: 3
+  output_channels: 4
+
+input:
+  orthomosaic: data/IMAGE/SETE.gpkg
+  roi: data/TALHOES/SETE_TALHAO.geojson
+  reference_lines: data/LINHAS/SETE_LINHAS.geojson
+  id_field: FID_linhas
+  group_field: id

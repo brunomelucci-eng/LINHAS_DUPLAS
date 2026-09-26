@@ -1,0 +1,95 @@
+# Modelo especializado na imagem/rotulacao 2_imagem.
+# O output_dir isolado impede substituir o dataset e os checkpoints gerais.
+project:
+  name: sugarcane_rows_2_imagem
+  output_dir: outputs_2_imagem
+
+input:
+  orthomosaic: data/IMAGE/2_imagem.gpkg
+  roi: data/TALHOES/ROI-2_imagem.geojson
+  reference_lines: data/LINHAS/LINHAS-2_imagem.geojson
+  id_field: id
+  group_field: id
+  rgb_bands: [1, 2, 3]
+
+inputs:
+  - name: "2_imagem"
+    orthomosaic: data/IMAGE/2_imagem.gpkg
+    roi: data/TALHOES/ROI-2_imagem.geojson
+    reference_lines: data/LINHAS/LINHAS-2_imagem.geojson
+    id_field: id
+    group_field: id
+    rgb_bands: [1, 2, 3]
+
+targets:
+  row_width_m: 0.40
+  center_width_m: 0.12
+  orientation_sample_step_m: 0.10
+
+loss:
+  row_bce_weight: 0.15
+  row_dice_weight: 0.15
+  center_focal_weight: 0.20
+  center_dice_weight: 0.25
+  center_false_positive_weight: 0.05
+  cldice_weight: 0.10
+  orientation_weight: 0.10
+
+training:
+  epochs: 60
+  batch_size: 2
+  gradient_accumulation_steps: 2
+  learning_rate: 0.0001
+  early_stopping_patience: 8
+  monitor: val_center_dice
+  monitor_mode: max
+
+inference:
+  use_tta: true
+  batch_size: 1
+
+postprocessing:
+  threshold_mode: single
+  center_threshold: 0.50
+  center_threshold_high: 0.50
+  center_threshold_low: 0.50
+  closing_radius_m: 0.00
+  opening_radius_m: 0.00
+  double_row_validation:
+    enabled: true
+    mode: annotate
+    tolerance_m: 0.06
+    max_angle_difference_deg: 6.0
+    min_longitudinal_overlap_ratio: 0.60
+
+gap_bridging:
+  # O bridge generico ainda nao conhece pair_id/lado. Reparos ficam a cargo
+  # do refinamento vetorial estrito por irma confirmada.
+  enabled: false
+
+double_row_refinement:
+  reference_guided_repair:
+    enabled: true
+    require_same_pair_id: true
+    allow_neighbor_reference: false
+    min_completion_gap_m: 0.20
+    max_completion_gap_m: 2.00
+    min_probability_median: 0.20
+    min_probability_fraction: 0.60
+    min_neighbor_clearance_m: 0.35
+  both_broken_repair:
+    enabled: false
+    use_good_neighbor_as_local_template: false
+  terminal_extension:
+    enabled: false
+
+final_centerline_fairing:
+  terminal:
+    enabled: false
+
+topology_validation:
+  reject_closed_loops: true
+  reject_hairpins: true
+  hairpin_min_length_m: 1.00
+  hairpin_max_endpoint_ratio: 0.35
+  hairpin_min_total_turn_deg: 120.0

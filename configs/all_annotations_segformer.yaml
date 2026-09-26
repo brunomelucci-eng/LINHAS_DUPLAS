@@ -1,0 +1,53 @@
+# Treinamento global com todas as rotulacoes usando SegFormer (mit_b0)
+project:
+  name: sugarcane_rows_all_annotations_segformer
+  output_dir: outputs_all_annotations_segformer
+
+dataset:
+  existing_output_policy: replace
+
+tiling:
+  include_empty_tiles_ratio: 0.20
+
+negative_sampling:
+  mode: unlabeled_empty
+  min_line_distance_m: 0.50
+
+dataset_quality:
+  min_source_images: 10
+  min_train_tiles: 50
+  min_val_tiles: 10
+  min_test_tiles: 10
+  min_hard_negative_tiles: 0
+  min_background_pixel_fraction: 0.70
+
+model:
+  architecture: segformer
+  encoder: mit_b0
+  pretrained: true
+  input_channels: 3
+  output_channels: 4
+
+training:
+  epochs: 100
+  batch_size: 2
+  gradient_accumulation_steps: 2
+  learning_rate: 0.0003
+  early_stopping_patience: 12
+  monitor: val_center_dice
+  monitor_mode: max
+  threshold_calibration:
+    enabled: true
+    min_threshold: 0.30
+    max_threshold: 0.90
+    threshold_step: 0.02
+    minimum_validation_dice: 0.30
+    max_predicted_fraction: 0.25
+    min_predicted_to_target_ratio: 0.25
+    max_predicted_to_target_ratio: 3.00
+    fail_on_rejected: true
+
+inference:
+  threshold_calibration:
+    enabled: true
+    required: true

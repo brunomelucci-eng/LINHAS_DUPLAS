@@ -1,0 +1,51 @@
+max_zip_mb: 450
+
+sample_limits:
+  train: 20
+  val: 12
+  test: 12
+
+large_file_mb: 200
+large_log_mb: 20
+
+include_extensions:
+  - .py
+  - .yaml
+  - .yml
+  - .json
+  - .csv
+  - .md
+  - .txt
+  - .log
+  - .png
+  - .jpg
+  - .pt
+  - .npz
+
+exclude_directories:
+  - .git
+  - .venv
+  - venv
+  - __pycache__
+  - node_modules
+  - cache
+  - temp
+  - tmp
+  - .pytest_cache
+  - .mypy_cache
+  - .vscode
+  - .idea
+
+preferred_model_names:
+  - best
+  - approved
+  - final
+  - current
+
+sensitive_patterns:
+  - .env
+  - private_key
+  - credentials
+  - token
+  - secret
+  - password

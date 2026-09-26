@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sugarcane_row_ai"
+version = "0.1.0"
+description = "Detection and Vectorization of Sugarcane Rows using Semantic Segmentation and Graph-based Postprocessing"
+readme = "README.md"
+authors = [{ name = "Antigravity AI", email = "antigravity@google.com" }]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+    "torch",
+    "torchvision",
+    "segmentation-models-pytorch",
+    "opencv-contrib-python",
+    "rasterio",
+    "geopandas",
+    "shapely",
+    "pyproj",
+    "fiona",
+    "pyogrio",
+    "albumentations",
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-image",
+    "scikit-learn",
+    "networkx",
+    "matplotlib",
+    "tqdm",
+    "pyyaml",
+    "tensorboard",
+    "rich",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

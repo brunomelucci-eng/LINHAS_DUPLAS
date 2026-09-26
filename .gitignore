@@ -1,0 +1,105 @@
+# =====================================================================
+# .gitignore - Projeto LINHAS_DUPLAS (Sugarcane Row AI)
+# Configurado para versionamento limpo entre múltiplos computadores
+# =====================================================================
+
+# --- 1. Ambientes Virtuais Python ---
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# --- 2. Bytecode e Cache Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+sugarcane_row_ai.egg-info/
+
+# --- 3. Testes, Linters e Cobertura ---
+.pytest_cache/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.mypy_cache/
+.ruff_cache/
+
+# --- 4. Dados Pesados e Imagens Geoespaciais (Rasters / TIFs / GPKG) ---
+# Imagens pesadas de ortomosaicos e arquivos brutos não devem subir para o Git
+data/IMAGE/
+inferencia/image/
+*.tif
+*.tiff
+*.geotiff
+*.part.tif
+*.part.*
+temp_raster_*
+*.vrt
+*.gpkg
+!data/ANNOTATIONS/*.gpkg
+
+# Opcional: Se desejar ignorar todos os dados brutos e manter apenas pastas:
+# data/*
+# !data/README.md
+
+# --- 5. Datasets Gerados e Saídas de Treinamento ---
+# Tiles recortados (.npz), relatórios intermediários e predições
+*.npz
+outputs/
+outputs_*/
+inferencia/outputs/
+
+# --- 6. Pesos de Modelos e Checkpoints (.pt, .pth, .onnx) ---
+# Checkpoints pesados gerados durante o treino (centenas de MBs a GBs)
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+modelos/*.pt
+modelos/*.pth
+
+# --- 7. Backups e Arquivos Temporários ---
+.backup_*/
+*.bak
+*.tmp
+*.swp
+*~
+
+# --- 8. Configurações de IDEs e Editores ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.gemini/
+
+# --- 9. Arquivos de Sistema Operacional ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+._*

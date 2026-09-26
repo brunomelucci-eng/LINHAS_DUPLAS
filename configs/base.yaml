@@ -1,0 +1,673 @@
+project:
+  name: sugarcane_rows
+  seed: 42
+  output_dir: outputs
+
+# Os dois produtos vetoriais são obrigatórios em toda inferência integrada.
+outputs:
+  always_save_post_inference: true
+  always_save_postprocessing: true
+  overwrite_existing: false
+  naming:
+    post_inference_suffix: "__pos_inferencia"
+    postprocessing_suffix: "__pos_processamento"
+  save_lineage: true
+  save_comparison_report: true
+
+input:
+  orthomosaic: data/IMAGE/SETE.gpkg
+  orthomosaic_layer: null
+  roi: data/TALHOES/SETE_TALHAO.geojson
+  roi_layer: null
+  reference_lines: null
+  lines_layer: null
+  id_field: row_id
+  group_field: talhao_id
+  rgb_bands: [1, 2, 3]
+
+inputs:
+  - name: "72696"
+    orthomosaic: data/IMAGE/72696.gpkg
+    roi: data/TALHOES/72696.geojson
+    reference_lines: data/LINHAS/72696_LINHAS.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "74097"
+    orthomosaic: data/IMAGE/74097.gpkg
+    roi: data/TALHOES/74097.geojson
+    reference_lines: data/LINHAS/74097_LINHAS.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "74098"
+    orthomosaic: data/IMAGE/74098.gpkg
+    roi: data/TALHOES/74098.geojson
+    reference_lines: data/LINHAS/74098_LINHAS.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "75531"
+    orthomosaic: data/IMAGE/75531.gpkg
+    roi: data/TALHOES/75531.geojson
+    reference_lines: data/LINHAS/75531_LINHAS.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "77967"
+    orthomosaic: data/IMAGE/77967.gpkg
+    roi: data/TALHOES/77967.geojson
+    reference_lines: data/LINHAS/77967_LINHAS.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "Kahena"
+    orthomosaic: data/IMAGE/Kahena.gpkg
+    roi: data/TALHOES/Kahena_talhoes.geojson
+    reference_lines: data/LINHAS/Kahena_LINHAS.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "Portao"
+    orthomosaic: data/IMAGE/Portao.gpkg
+    roi: data/TALHOES/portao_talhao.geojson
+    reference_lines: data/LINHAS/portao_linhas.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "SETE"
+    orthomosaic: data/IMAGE/SETE.gpkg
+    roi: data/TALHOES/SETE_TALHAO.geojson
+    reference_lines: data/LINHAS/SETE_LINHAS.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "80379"
+    orthomosaic: data/IMAGE/80379.gpkg
+    roi: data/TALHOES/80379_TALHOES.geojson
+    reference_lines: data/LINHAS/80379_LINHAS.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "STO_ANTONIO"
+    orthomosaic: data/IMAGE/STO_ANTONIO.gpkg
+    roi: data/TALHOES/STO_ANTONIO_TALHOES.geojson
+    reference_lines: data/LINHAS/STO_ANTONIO_LINHAS.geojson
+    id_field: id
+    group_field: Id
+    rgb_bands: [1, 2, 3]
+  - name: "2_imagem"
+    orthomosaic: data/IMAGE/2_imagem.gpkg
+    roi: data/TALHOES/ROI-2_imagem.geojson
+    reference_lines: data/LINHAS/LINHAS-2_imagem.geojson
+    id_field: id
+    group_field: id
+    rgb_bands: [1, 2, 3]
+  - name: "661"
+    orthomosaic: data/IMAGE/661.gpkg
+    roi: data/TALHOES/661_TALHOES.geojson
+    reference_lines: data/LINHAS/661_LINHAS.geojson
+    id_field: row_id
+    group_field: talhao_id
+    rgb_bands: [1, 2, 3]
+  - name: "result_10"
+    orthomosaic: data/IMAGE/result_10.gpkg
+    roi: data/TALHOES/ROI_10.geojson
+    reference_lines: data/LINHAS/linhas_10.geojson
+    id_field: id
+    group_field: id
+    rgb_bands: [1, 2, 3]
+  - name: "result_11"
+    orthomosaic: data/IMAGE/result_11.gpkg
+    roi: data/TALHOES/roi_11.geojson
+    reference_lines: data/LINHAS/LINHAS_11.geojson
+    id_field: id
+    group_field: id
+    rgb_bands: [1, 2, 3]
+  - name: "result_6"
+    orthomosaic: data/IMAGE/result_6.gpkg
+    roi: data/TALHOES/ROI_6.geojson
+    reference_lines: data/LINHAS/LINHAS_6.geojson
+    id_field: id
+    group_field: id
+    rgb_bands: [1, 2, 3]
+  - name: "result_8"
+    orthomosaic: data/IMAGE/result_8.gpkg
+    roi: data/TALHOES/ROI_8.geojson
+    reference_lines: data/LINHAS/LINHAS_8.geojson
+    id_field: id
+    group_field: id
+    rgb_bands: [1, 2, 3]
+
+crs:
+  auto_utm: true
+  working_epsg: null
+  export_epsg: null
+  strict_alignment_check: true
+  preserve_source_gsd: true
+  output_resolution_m: null
+  report_native_gsd: true
+  max_gsd_variation_ratio: 0.25
+  fail_on_excessive_gsd_variation: false
+  crop_to_roi_before_warp: true   # reprojetar somente ROI + buffer (P0-03)
+  roi_warp_buffer_m: 10.0         # buffer em metros ao redor da ROI
+  use_warped_vrt: true
+  compression: ZSTD               # ZSTD ou DEFLATE
+  compression_fallback: DEFLATE
+  gdal_threads: 2
+  warp_mem_limit_mb: 256
+
+runtime:
+  prevent_concurrent_runs: true   # impede duas execucoes simultaneas (P0-04)
+  max_cpu_threads: 4
+  gdal_threads: 2
+  gdal_cache_mb: 256
+  cleanup_stale_temp_hours: 24    # remove temporarios antigos apos N horas
+  min_free_disk_gb: 15            # aborta se espaco livre abaixo desse valor
+
+tiling:
+  tile_size_px: 512
+  overlap_px: 128
+  min_valid_fraction: 0.60
+  include_empty_tiles_ratio: 0.15
+
+negative_sampling:
+  mode: explicit_zones
+  min_zone_fraction: 0.80
+  min_line_distance_m: 0.50
+
+dataset:
+  existing_output_policy: replace
+
+targets:
+  row_width_m: 0.40
+  center_width_m: 0.18  # deve representar >= 3 pixels no GSD utilizado
+  orientation_sample_step_m: 0.10
+
+split:
+  strategy: spatial_group
+  group_field: talhao_id
+  train_fraction: 0.70
+  val_fraction: 0.15
+  test_fraction: 0.15
+
+model:
+  architecture: unet
+  encoder: resnet34
+  pretrained: true
+  input_channels: 3
+  output_channels: 4
+
+loss:
+  row_bce_weight: 0.15
+  row_dice_weight: 0.15
+  center_focal_weight: 0.20
+  center_dice_weight: 0.25
+  center_false_positive_weight: 0.05
+  cldice_weight: 0.10  # conectividade sem incentivar pontes entre linhas irmas
+  orientation_weight: 0.10
+
+training:
+  epochs: 100
+  batch_size: 2
+  gradient_accumulation_steps: 2
+  num_workers: 2
+  optimizer: adamw
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  mixed_precision: true
+  gradient_clip_norm: 1.0
+  early_stopping_patience: 12
+  monitor: val_center_cldice
+  monitor_mode: max
+
+augmentation:
+  enabled: true
+  rotate_limit: 180
+  horizontal_flip_p: 0.5
+  vertical_flip_p: 0.5
+  brightness_contrast_p: 0.35
+  gamma_p: 0.20
+  noise_p: 0.10  # reduzido: ruído excessivo apaga linhas finas
+  blur_p: 0.05   # reduzido: blur apaga bordas da linha central
+
+inference:
+  batch_size: 2
+  mixed_precision: true
+  auto_reduce_batch_on_oom: true
+  use_tta: true
+  overlap: 0.50
+  blend_mode: hann
+  threshold_after_mosaic: true
+  blending: hann
+  save_probability_rasters: false
+  num_threads: 4
+  memmap_threshold_px: 25000000   # 25 M px; abaixo disso usa array em RAM
+  output_channels_to_store: [center]   # armazena apenas center_prob por padrao
+  retain_row_probability: false        # armazena row_prob somente se necessario
+  retain_orientation_probability: false
+  final_probability_dtype: float16
+  max_temp_disk_gb: 20.0
+
+debug:
+  enabled: false
+  save_probability: false
+  save_weights: false
+  save_masks: false
+  save_skeleton: false
+  save_tile_grid: false
+
+postprocessing:
+  # Limiar unico evita que corredores fracos entre linhas irmas sejam
+  # incorporados inteiros pela histerese 8-conexa.
+  threshold_mode: single
+  center_threshold: 0.50
+  row_threshold: 0.30
+  # Variante B do teste de histerese; validar visualmente em ROI pequena antes da área integral.
+  center_threshold_high: 0.42
+  center_threshold_low: 0.22
+  # Baseline topologicamente seguro. Testar 0.03 e 0.05 somente apos QA visual.
+  closing_radius_m: 0.00
+  opening_radius_m: 0.00  # 0.00 desabilita abertura; testar gradualmente: 0.02, 0.05
+  directional_closing:
+    enabled: false
+    passes_m: []
+    lateral_width_m: 0.08
+    angle_tolerance_deg: 6
+  # Parametros separados (substituem min_component_length_m ambiguo)
+  min_component_area_m2: 0.02  # area minima na mascara binaria (m2 -> px^2 correto)
+  min_spur_length_m: 0.50      # comprimento minimo de espiculas no grafo
+  max_hole_area_m2: 0.50
+  # Processamento em blocos para imagens grandes
+  block_processing_threshold_px: 5000000
+  block_size_px: 4096
+  block_overlap_px: 128
+  max_ram_mb: 3072
+
+  thinning:
+    backend: opencv
+    block_processing_threshold_px: 5000000
+    block_size_px: 4096
+    block_overlap_px: 128
+    reconcile_seams: true
+    allow_large_skimage_fallback: false
+
+  graph:
+    backend: numpy
+    max_networkx_pixels: 50000
+    # STO_ANTONIO mediu 24.93 M pixels; acumuladores do mosaico sao liberados
+    # antes desta etapa para manter margem de RAM na maquina de 32 GiB.
+    max_total_skeleton_pixels: 30000000
+    # Limite proporcional: adapta a protecao ao tamanho de qualquer imagem.
+    max_skeleton_fraction: 0.08
+    scan_block_rows: 2048
+    visited_memmap_threshold_px: 50000000
+    progress_interval_edges: 100000
+    max_stage_minutes: 30
+
+  double_row_validation:
+    enabled: true
+    mode: annotate  # 'annotate' classifica sem excluir; 'filter' so apos validacao extensiva
+    intra_pair_min_m: 0.85
+    intra_pair_max_m: 1.00
+    inter_pair_min_m: 1.15
+    inter_pair_max_m: 1.40
+    tolerance_m: 0.08
+    max_angle_difference_deg: 8.0
+    min_longitudinal_overlap_ratio: 0.50
+    auto_spacing:
+      enabled: true
+      min_samples: 30
+      max_sample_lines: 2000
+      max_search_distance_m: 2.50
+      max_angle_difference_deg: 10.0
+      min_longitudinal_overlap_ratio: 0.35
+      trim_lower_quantile: 0.02
+      trim_upper_quantile: 0.98
+      minimum_half_width_m: 0.05
+      relative_half_width: 0.10
+      mad_multiplier: 3.0
+      cluster_separation_margin_m: 0.02
+
+network_cleanup:
+  enabled: true
+  max_branch_angle_deg: 8
+  max_short_branch_m: 1.50
+  reject_degree_gt_2: true
+  reject_short_cycles: true
+  max_cycle_perimeter_m: 5.0
+
+topology_validation:
+  node_snap_tolerance_m: 0.01
+  max_cycle_perimeter_m: 5.0
+  reject_closed_loops: true
+  reject_hairpins: true
+  hairpin_min_length_m: 1.00
+  hairpin_max_endpoint_ratio: 0.35
+  hairpin_min_total_turn_deg: 120.0
+  hairpin_sample_spacing_m: 0.20
+
+gap_bridging:
+  # Desabilitado ate o bridge usar de fato pair_id, lado e orientacao. O
+  # refinamento vetorial por irma confirmada permanece responsavel por gaps.
+  enabled: false
+  max_gap_m: 0.60
+  max_angle_deg: 4
+  max_lateral_offset_m: 0.05
+  require_facing_endpoints: true
+  reject_crossing_connections: true
+  reject_neighbor_row_connections: true
+  max_connections_per_endpoint: 1
+  reject_degree_gt_2: true
+  reject_short_cycles: true
+  iterative_passes: 1
+  min_corridor_probability: 0.12      # reduzido para conectar trechos de baixa confianca
+  forbid_crossings: true             # alias legado de reject_crossing_connections
+  use_orientation_map: false          # ativar somente quando orientation_sin/cos forem passados
+  use_double_row_context: true
+  max_candidates_per_endpoint: 8      # limita busca k-NN (P0-06)
+  max_candidate_pairs: 150000         # teto absoluto de candidatos
+  corridor_samples: 16                # amostras vetorizadas do corredor
+  progress_log_interval: 1000         # log a cada N endpoints processados
+  max_stage_minutes: 8                # timeout com aviso (nao aborta, avisa)
+
+line_extension:
+  enabled: false
+  max_extension_m: 0.30
+  max_angle_change_deg: 12.0
+  require_probability_support: true
+  min_probability: 0.22
+  min_supported_fraction: 0.80
+
+# Motor vetorial único, compartilhado pela inferência e pelo CLI isolado.
+postprocess_pipeline:
+  enabled: true
+  version: "1.2.0"
+  save_raw_vectors: true
+  fail_on_unmatched: true
+  fail_on_crossing: true
+  fail_on_serration: true
+  raise_on_gate_failure: false
+  prevector_cleanup:
+    enabled: true
+  track_merge:
+    enabled: true
+    # Somente componentes já conectados são unidos. Snap permanece opt-in até
+    # existir validação real específica para conectores de endpoints.
+    allow_endpoint_snap: false
+    max_endpoint_snap_m: 0.20
+
+pair_completion:
+  enabled: true
+  on_insufficient_evidence: manual_review
+  require_probability_support: true
+  require_lateral_order: true
+  reject_crossing: true
+
+center_mass_guard:
+  enabled: true
+  max_lateral_shift_m: 0.10
+  max_hausdorff_m: 0.12
+  max_median_probability_loss: 0.02
+  min_supported_fraction: 0.55
+
+deduplication:
+  enabled: true
+  spatial_index: true              # usar STRtree O(log N) em vez de O(N^2) (P0-07)
+  max_mean_distance_m: 0.20        # independente do gap_bridging
+  max_angle_difference_deg: 5.0
+  min_overlap_ratio: 0.70
+  max_candidates_per_line: 30      # limita candidatos por query espacial
+
+curve_fitting:
+  enabled: false
+  smoothing_tolerance_m: 0.08
+  max_deviation_m: 0.20
+  fallback_to_simplified: true     # se spline falhar, usar linha simplificada
+  reject_self_intersection: true
+
+vector:
+  simplify_tolerance_m: 0.05
+  vertex_spacing_m: 1.50        # reduzido de 5.0; valor alto deforma linhas curvas
+  min_line_length_m: 1.50       # mantido por compatibilidade
+  min_final_line_length_m: 1.50 # parametro correto para filtro vetorial final
+  export_debug_layers: false
+
+
+# Refinamento vetorial inteligente para linhas duplas. Executado depois da
+# deduplicacao e antes da validacao topologica final.
+double_row_refinement:
+  enabled: true
+
+  quality:
+    sample_spacing_m: 0.20
+    turn_window_m: 0.60
+    kink_threshold_deg: 12.0
+    good_max_turn_deg: 10.0
+    good_p95_turn_deg: 6.0
+    max_good_kink_fraction: 0.02
+    min_good_length_m: 4.0
+    min_repairable_length_m: 1.0
+    min_good_probability_median: 0.20
+
+  smoothing:
+    enabled: true
+    apply_only_to_suspect: true
+    preserve_good_lines: true
+    snap_to_center_probability: true
+    resample_spacing_m: 0.20
+    window_m: 1.40
+    max_deviation_m: 0.10
+    max_hausdorff_deviation_m: 0.12
+    allowed_p95_turn_regression_deg: 0.50
+
+  center_mass_snap:
+    enabled: true
+    search_radius_m: 0.12
+    step_m: 0.02
+    min_probability: 0.12
+    offset_smoothing_window_m: 0.80
+    max_total_shift_m: 0.12
+
+  track_assignment:
+    max_same_track_gap_m: 6.0
+    max_same_track_angle_deg: 8.0
+    max_connector_angle_deg: 10.0
+    max_lateral_offset_m: 0.18
+
+  reference_guided_repair:
+    enabled: true
+    use_only_missing_interval: true
+    never_copy_full_sister_line: true
+    preserve_existing_good_segments: true
+    snap_to_center_probability: true
+    reject_crossing: true
+    reject_neighbor_row_switch: true
+    require_same_pair_id: true
+    allow_neighbor_reference: false
+    min_reference_offset_m: 0.30
+    max_reference_distance_m: 4.0
+    min_completion_gap_m: 0.20
+    max_completion_gap_m: 6.0
+    guide_spacing_m: 0.20
+    join_tolerance_m: 0.20
+    min_probability_median: 0.12
+    min_probability_fraction: 0.45
+    min_neighbor_clearance_m: 0.35
+    repair_kink_threshold_deg: 14.0
+    kink_sample_spacing_m: 0.20
+    kink_turn_window_m: 0.60
+    kink_repair_half_window_m: 0.80
+
+  both_broken_repair:
+    enabled: false
+    use_good_neighbor_as_local_template: false
+    fill_only_supported_gaps: true
+    reject_unsupported_regions: true
+
+  terminal_extension:
+    enabled: false
+    trigger_distance_to_boundary_m: 2.0
+    replace_terminal_m: 2.0
+    direction_fit_window_m: 3.0
+    max_extension_m: 2.5
+    min_pair_confidence: 0.75
+    require_probability_or_sister_support: true
+    min_probability: 0.15
+    min_supported_fraction: 0.45
+    min_neighbor_clearance_m: 0.35
+
+# Fairing vetorial final: segue globalmente o centro da probabilidade e evita
+# alternar entre picos laterais independentes do raster.
+final_centerline_fairing:
+  engine: continuous
+  max_deviation_m: 0.12
+  enabled: true
+  preserve_good_lines: true
+
+  # A classe GOOD continua preservada, exceto quando a própria geometria
+  # contém o padrão repetitivo de serrilhado lateral observado no benchmark.
+  good_line_serration_override:
+    enabled: true
+
+  # Auditor final adaptativo ao GSD. As janelas 3/5/9 px enxergam os degraus
+  # do esqueleto que desapareciam quando a linha era amostrada somente a 0.20 m.
+  # Curvas verdadeiras são preservadas porque o gate exige oscilação repetitiva
+  # ou a combinação de densidade raster com resíduo/ângulo excessivo.
+  micro_serration:
+    enabled: true
+    default_gsd_m: 0.04
+    max_sample_spacing_m: 0.05
+    window_pixels: [3, 5, 9]
+    residual_window_pixels: 9
+    min_line_length_m: 1.50
+    min_meaningful_vertex_turn_deg: 0.50
+    max_micro_p95_turn_deg: 2.50
+    max_vertex_p95_turn_deg: 3.00
+    max_lateral_inversions_per_m: 0.75
+    max_vertex_density_per_m: 8.0
+    max_length_excess_ratio: 0.0025
+    max_residual_p95_gsd_ratio: 0.25
+    max_score: 1.0
+
+  sampling:
+    longitudinal_spacing_m: 0.20
+    lateral_search_radius_m: 0.12
+    lateral_step_m: 0.02
+
+  probability:
+    min_probability: 0.12
+    max_median_probability_loss: 0.02
+    lateral_blur_sigma_samples: 1.0
+
+  regularization:
+    first_difference_weight: 4.0
+    second_difference_weight: 12.0
+    original_distance_weight: 2.0
+    pair_spacing_weight: 3.0
+
+  offset_smoothing:
+    enabled: true
+    method: gaussian
+    fallback_method: moving_average
+    dynamic_sigma_enabled: true
+    moving_average_window_m: 0.80
+    gaussian_sigma_m: 0.45
+    straight_sigma_m: 0.70
+    gentle_curve_sigma_m: 0.45
+    curve_sigma_m: 0.28
+    high_curvature_sigma_m: 0.18
+    truncate: 3.0
+
+  # Suavizacao final em duas etapas. O filtro trabalha em amostras internas
+  # densas (GSD real) e somente a geometria exportada usa espacamento de ate
+  # 3 m. A intensidade cai continuamente conforme aumenta a curvatura real.
+  two_stage_gaussian:
+    enabled: true
+    internal_sampling_max_m: 0.08
+    # Curto o bastante para nao preservar um metro inteiro de degraus junto
+    # aos endpoints; ainda mantem o primeiro e o ultimo ponto exatamente.
+    terminal_taper_m: 0.15
+    transition_blend_m: 0.50
+    truncate: 3.0
+    light:
+      straight_sigma_m: 0.35
+      gentle_curve_sigma_m: 0.25
+      curve_sigma_m: 0.16
+      high_curvature_sigma_m: 0.10
+    aggressive:
+      straight_sigma_m: 1.00
+      gentle_curve_sigma_m: 0.70
+      curve_sigma_m: 0.45
+      high_curvature_sigma_m: 0.25
+
+  geometry:
+    baseline_window_m: 1.40
+    bspline_smoothing_per_station_m2: 0.0001
+    max_lateral_shift_m: 0.10
+    max_hausdorff_m: 0.12
+    max_pair_spacing_change_m: 0.10
+    preserve_endpoints: true
+    require_simple: true
+    reject_crossing: true
+    preserve_pair_order: true
+
+  angular_metrics:
+    short_window_m: 0.25
+    medium_window_m: 0.60
+    long_window_m: 1.35
+
+  acceptance:
+    min_short_p95_reduction_ratio: 0.50
+    enforce_min_reduction_above_short_p95_deg: 2.50
+    max_medium_p95_regression_deg: 0.50
+    max_medium_p95_ratio: 1.05
+    max_long_p95_regression_deg: 1.00
+    max_long_p95_ratio: 1.10
+    min_backoff_short_p95_reduction_ratio: 0.20
+    conservative_gaussian_sigmas_m: [0.45, 0.40, 0.35, 0.30, 0.25]
+    conservative_gaussian_sampling_m: 0.10
+    conservative_gaussian_terminal_taper_m: 0.15
+    conservative_gaussian_truncate: 3.0
+    backoff_factors: [0.90, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10]
+    pair_spacing_backoff_factors: [0.90, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.20]
+
+  output_sampling:
+    straight_spacing_m: 0.60
+    curve_spacing_m: 0.25
+    high_curvature_spacing_m: 0.18
+    curve_turn_threshold_deg: 2.0
+    high_curvature_turn_threshold_deg: 7.0
+
+  # Esquema canônico. O bloco output_sampling acima permanece somente como
+  # fallback para overlays antigos e para o benchmark da versão anterior.
+  adaptive_output_sampling:
+    enabled: true
+    max_vertex_spacing_m: 3.00
+    max_chord_error_m: 0.02
+    chord_error_probe_spacing_m: 0.05
+    straight_spacing_m: 3.00
+    gentle_curve_spacing_m: 1.50
+    curve_spacing_m: 0.75
+    high_curvature_spacing_m: 0.35
+    terminal_spacing_m: 0.50
+    splice_spacing_m: 0.35
+    straight_max_turn_deg_per_m: 1.0
+    gentle_curve_max_turn_deg_per_m: 3.0
+    curve_max_turn_deg_per_m: 7.0
+    min_class_persistence_m: 0.80
+    transition_blend_m: 0.50
+
+  splice_blending:
+    enabled: true
+    transition_length_m: 1.00
+    require_c1_continuity: true
+
+  terminal:
+    enabled: false
+    trigger_distance_to_boundary_m: 2.00
+    replace_terminal_m: 2.00
+    direction_fit_window_m: 3.00
+    transition_length_m: 0.50
+    max_extension_m: 2.50
+    use_sister_direction_when_available: true

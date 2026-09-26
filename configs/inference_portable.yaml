@@ -1,0 +1,29 @@
+# Configuracao portatil do ultimo modelo global.
+# Os caminhos da imagem e do talhao sao informados no comando de inferencia.
+project:
+  name: sugarcane_rows_portable
+  output_dir: outputs
+
+model:
+  architecture: unet
+  encoder: resnet34
+  pretrained: true
+  input_channels: 3
+  output_channels: 4
+
+training:
+  threshold_calibration:
+    enabled: true
+    min_threshold: 0.30
+    max_threshold: 0.90
+    threshold_step: 0.02
+    minimum_validation_dice: 0.30
+    max_predicted_fraction: 0.25
+    min_predicted_to_target_ratio: 0.25
+    max_predicted_to_target_ratio: 3.00
+    fail_on_rejected: true
+
+inference:
+  threshold_calibration:
+    enabled: true
+    required: true

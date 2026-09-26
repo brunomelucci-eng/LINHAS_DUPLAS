@@ -1,0 +1,7 @@
+# UNet configuration with ResNet34 backbone
+model:
+  architecture: unet
+  encoder: resnet34
+  pretrained: true
+  input_channels: 3
+  output_channels: 4

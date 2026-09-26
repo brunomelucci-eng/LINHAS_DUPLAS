@@ -1,0 +1,61 @@
+project:
+  name: test_pipeline
+  seed: 42
+  output_dir: outputs/test_pipeline
+
+inputs: null
+
+input:
+  name: "SETE"
+  orthomosaic: data/IMAGE/SETE.gpkg
+  orthomosaic_layer: null
+  roi: data/TALHOES/SETE_TALHAO.geojson
+  roi_layer: null
+  reference_lines: data/LINHAS/SETE_LINHAS.geojson
+  lines_layer: null
+  id_field: FID_linhas
+  group_field: id
+  rgb_bands: [1, 2, 3]
+
+tiling:
+  tile_size_px: 512
+  overlap_px: 128
+  min_valid_fraction: 0.60
+  include_empty_tiles_ratio: 0.10
+
+split:
+  strategy: random
+  train_fraction: 0.60
+  val_fraction: 0.20
+  test_fraction: 0.20
+
+model:
+  architecture: unet
+  encoder: resnet34
+  pretrained: true
+  input_channels: 3
+  output_channels: 4
+
+training:
+  epochs: 1
+  batch_size: 2
+  gradient_accumulation_steps: 1
+  num_workers: 0
+  mixed_precision: true
+  early_stopping_patience: 10
+
+inference:
+  batch_size: 2
+  mixed_precision: true
+  use_tta: false
+  threshold_calibration:
+    enabled: false
+    required: false
+
+postprocessing:
+  center_threshold: 0.35
+
+final_centerline_fairing:
+  enabled: true
+  engine: continuous
+  max_deviation_m: 0.12
