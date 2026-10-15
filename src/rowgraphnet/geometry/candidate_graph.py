@@ -8,6 +8,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 
 import numpy as np
+from scipy.spatial import cKDTree
 from shapely.geometry import LineString, Point
 
 from rowgraphnet.domain import CandidateConnection, ExtractedSegment, SpacingEstimate
@@ -197,112 +198,120 @@ def generate_candidates(
 
     candidates: list[CandidateConnection] = []
     corridor_scale = _spacing_scale(spacing)
-    for index, (segment_a, side_a, point_a, tangent_a) in enumerate(endpoints):
-        for segment_b, side_b, point_b, tangent_b in endpoints[index + 1 :]:
-            if segment_a.segment_id == segment_b.segment_id:
-                continue
-            delta = np.array((point_b.x - point_a.x, point_b.y - point_a.y), dtype=float)
-            distance = float(np.linalg.norm(delta))
-            if distance <= np.finfo(float).eps or distance > radius:
-                continue
-            direction = delta / distance
-            facing_a = max(float(np.dot(tangent_a, direction)), 0.0)
-            facing_b = max(float(np.dot(tangent_b, -direction)), 0.0)
-            facing_score = math.sqrt(facing_a * facing_b)
-            if facing_score <= 0:
-                continue
+    pts = np.array([(p.x, p.y) for _, _, p, _ in endpoints], dtype=np.float64)
+    if len(pts) > 0:
+        kdtree = cKDTree(pts)
+        candidate_pairs = sorted(kdtree.query_pairs(radius))
+    else:
+        candidate_pairs = []
 
-            tangent_alignment = float(
-                (1.0 + np.cos(2.0 * np.arccos(np.clip(np.dot(tangent_a, -tangent_b), -1, 1)))) / 2.0
-            )
-            lateral_a = abs(float(tangent_a[0] * delta[1] - tangent_a[1] * delta[0]))
-            lateral_b = abs(float(tangent_b[0] * -delta[1] - tangent_b[1] * -delta[0]))
-            lateral = (lateral_a + lateral_b) / 2.0
-            corridor_score = float(np.exp(-0.5 * (lateral / corridor_scale) ** 2))
-            distance_score = float(np.exp(-distance / radius))
+    for index_a, index_b in candidate_pairs:
+        segment_a, side_a, point_a, tangent_a = endpoints[index_a]
+        segment_b, side_b, point_b, tangent_b = endpoints[index_b]
+        if segment_a.segment_id == segment_b.segment_id:
+            continue
+        delta = np.array((point_b.x - point_a.x, point_b.y - point_a.y), dtype=float)
+        distance = float(np.linalg.norm(delta))
+        if distance <= np.finfo(float).eps or distance > radius:
+            continue
+        direction = delta / distance
+        facing_a = max(float(np.dot(tangent_a, direction)), 0.0)
+        facing_b = max(float(np.dot(tangent_b, -direction)), 0.0)
+        facing_score = math.sqrt(facing_a * facing_b)
+        if facing_score <= 0:
+            continue
 
-            midpoint = ((point_a.x + point_b.x) / 2.0, (point_a.y + point_b.y) / 2.0)
-            if orientation_sampler is None:
-                orientation_score = tangent_alignment
-                orientation_confidence = 0.0
-            else:
-                theta, orientation_confidence = orientation_sampler(*midpoint)
-                connector_theta = math.atan2(delta[1], delta[0])
-                orientation_score = float((1.0 + math.cos(2.0 * (connector_theta - theta))) / 2.0)
-                orientation_score = orientation_score * np.clip(
-                    orientation_confidence, 0.0, 1.0
-                ) + tangent_alignment * (1.0 - np.clip(orientation_confidence, 0.0, 1.0))
+        tangent_alignment = float(
+            (1.0 + np.cos(2.0 * np.arccos(np.clip(np.dot(tangent_a, -tangent_b), -1, 1)))) / 2.0
+        )
+        lateral_a = abs(float(tangent_a[0] * delta[1] - tangent_a[1] * delta[0]))
+        lateral_b = abs(float(tangent_b[0] * -delta[1] - tangent_b[1] * -delta[0]))
+        lateral = (lateral_a + lateral_b) / 2.0
+        corridor_score = float(np.exp(-0.5 * (lateral / corridor_scale) ** 2))
+        distance_score = float(np.exp(-distance / radius))
 
-            connector = LineString((point_a, point_b))
-            if _crosses_observed(
-                connector,
-                segment_a.segment_id,
-                segment_b.segment_id,
-                segments,
-                spatial_tree=segments_tree,
-            ):
-                continue
-            # The endpoint head represents evidence of a *true physical end*.
-            # A continuation is plausible when neither open skeleton tip looks
-            # like a true end; ROI/image cut handling occurs downstream.
-            endpoint_score = float(
-                np.sqrt(
-                    max(1.0 - segment_a.endpoint_confidence[side_a], 0.0)
-                    * max(1.0 - segment_b.endpoint_confidence[side_b], 0.0)
-                )
+        midpoint = ((point_a.x + point_b.x) / 2.0, (point_a.y + point_b.y) / 2.0)
+        if orientation_sampler is None:
+            orientation_score = tangent_alignment
+            orientation_confidence = 0.0
+        else:
+            theta, orientation_confidence = orientation_sampler(*midpoint)
+            connector_theta = math.atan2(delta[1], delta[0])
+            orientation_score = float((1.0 + math.cos(2.0 * (connector_theta - theta))) / 2.0)
+            orientation_score = orientation_score * np.clip(
+                orientation_confidence, 0.0, 1.0
+            ) + tangent_alignment * (1.0 - np.clip(orientation_confidence, 0.0, 1.0))
+
+        connector = LineString((point_a, point_b))
+        if _crosses_observed(
+            connector,
+            segment_a.segment_id,
+            segment_b.segment_id,
+            segments,
+            spatial_tree=segments_tree,
+        ):
+            continue
+        # The endpoint head represents evidence of a *true physical end*.
+        # A continuation is plausible when neither open skeleton tip looks
+        # like a true end; ROI/image cut handling occurs downstream.
+        endpoint_score = float(
+            np.sqrt(
+                max(1.0 - segment_a.endpoint_confidence[side_a], 0.0)
+                * max(1.0 - segment_b.endpoint_confidence[side_b], 0.0)
             )
-            visual_support = (
-                float(np.clip(evidence_sampler(connector), 0.0, 1.0))
-                if evidence_sampler is not None
-                else float(np.sqrt(max(segment_a.confidence, 0.0) * max(segment_b.confidence, 0.0)))
+        )
+        visual_support = (
+            float(np.clip(evidence_sampler(connector), 0.0, 1.0))
+            if evidence_sampler is not None
+            else float(np.sqrt(max(segment_a.confidence, 0.0) * max(segment_b.confidence, 0.0)))
+        )
+        scores = np.array(
+            [
+                facing_score,
+                tangent_alignment,
+                corridor_score,
+                distance_score,
+                orientation_score,
+                visual_support,
+            ],
+            dtype=float,
+        )
+        # True-end evidence is a veto likelihood rather than one weak vote
+        # among many geometric terms.  This prevents an otherwise pretty
+        # continuation from overriding a confidently observed physical end.
+        probability = float(
+            np.mean(np.clip(scores, 0.0, 1.0)) * np.clip(endpoint_score, 0.0, 1.0)
+        )
+        cost = float(-np.log(np.clip(probability, np.finfo(float).eps, 1.0)))
+        candidates.append(
+            CandidateConnection(
+                candidate_id=_candidate_id(
+                    segment_a.segment_id,
+                    side_a,
+                    segment_b.segment_id,
+                    side_b,
+                ),
+                segment_a=segment_a.segment_id,
+                side_a=side_a,
+                segment_b=segment_b.segment_id,
+                side_b=side_b,
+                geometry=connector,
+                probability=probability,
+                cost=cost,
+                evidence={
+                    "facing": facing_score,
+                    "tangent": tangent_alignment,
+                    "corridor": corridor_score,
+                    "distance": distance_score,
+                    "orientation": orientation_score,
+                    "orientation_confidence": float(orientation_confidence),
+                    "not_true_endpoint": endpoint_score,
+                    "visual_support": visual_support,
+                    "gap_m": distance,
+                    "search_radius_m": radius,
+                },
             )
-            scores = np.array(
-                [
-                    facing_score,
-                    tangent_alignment,
-                    corridor_score,
-                    distance_score,
-                    orientation_score,
-                    visual_support,
-                ],
-                dtype=float,
-            )
-            # True-end evidence is a veto likelihood rather than one weak vote
-            # among many geometric terms.  This prevents an otherwise pretty
-            # continuation from overriding a confidently observed physical end.
-            probability = float(
-                np.mean(np.clip(scores, 0.0, 1.0)) * np.clip(endpoint_score, 0.0, 1.0)
-            )
-            cost = float(-np.log(np.clip(probability, np.finfo(float).eps, 1.0)))
-            candidates.append(
-                CandidateConnection(
-                    candidate_id=_candidate_id(
-                        segment_a.segment_id,
-                        side_a,
-                        segment_b.segment_id,
-                        side_b,
-                    ),
-                    segment_a=segment_a.segment_id,
-                    side_a=side_a,
-                    segment_b=segment_b.segment_id,
-                    side_b=side_b,
-                    geometry=connector,
-                    probability=probability,
-                    cost=cost,
-                    evidence={
-                        "facing": facing_score,
-                        "tangent": tangent_alignment,
-                        "corridor": corridor_score,
-                        "distance": distance_score,
-                        "orientation": orientation_score,
-                        "orientation_confidence": float(orientation_confidence),
-                        "not_true_endpoint": endpoint_score,
-                        "visual_support": visual_support,
-                        "gap_m": distance,
-                        "search_radius_m": radius,
-                    },
-                )
-            )
+        )
 
     # Ambiguity is assessed locally at each endpoint.  We retain the hypotheses
     # for review but the optimizer can abstain from selecting them.
