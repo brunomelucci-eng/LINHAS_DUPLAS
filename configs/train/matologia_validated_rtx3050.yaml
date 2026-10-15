@@ -1,0 +1,50 @@
+# RowGraphNet Training Configuration
+# Perfil de comparacao inspirado no pipeline da Matologia.
+# A tarefa RowGraphNet e estes hiperparametros ainda nao foram validados agronomicamente.
+
+experiment:
+  name: "matologia_reference_rtx3050"
+  description: "Perfil experimental de comparacao com lote efetivo de 8 e early stopping"
+  source: "app-matologia (D:/PYTHON/mlops_portable_package/app-matologia)"
+  seed: 42
+
+hardware:
+  device: "cuda"
+  use_amp: true                    # Mixed Precision FP16 via PyTorch GradScaler (economiza 50% de VRAM)
+  num_workers: 0                   # 0 para Windows (evita overhead de spawn e conflito de VRT/GDAL)
+  pin_memory: true                 # Acelera transferencia da RAM (32GB) para a VRAM (4GB)
+  resource_fraction: 0.70          # Trava de segurança de 70% da GPU/CPU
+
+model:
+  model_name: "nvidia/mit-b2"      # SegFormer B2 (ou nvidia/mit-b0 para versao ultra-rapida)
+  in_channels: 3
+  decoder_channels: 128
+  refine_connectivity: false       # Sem rotulos de oclusao, nao chamar este perfil de reparador treinado
+  pretrained: true
+
+dataset:
+  manifests_dir: "data_set/manifests"
+  working_dir: "data_set/_working"
+  tile_size: 256                   # Tamanho de bloco validado da matologia (256x256)
+  stride: 192                      # 25% de sobreposicao (overlap = 0.25 da matologia: 256 * (1 - 0.25) = 192)
+  min_valid_pixels: 10
+  centerline_buffer_m: 0.10        # 10 cm para cada lado; alvo central com 20 cm de largura total
+  normalization:
+    scale: 0.00392156862745098     # 1/255 para os ortomosaicos uint8 auditados
+    scale_integer_to_unit: false   # O WarpedVRT entrega float32; nao inferir pelo dtype
+
+training:
+  batch_size: 2                    # Lote fisico seguro para 4.0 GB VRAM (~1.8 GB)
+  grad_accum_steps: 4              # Acumulacao de gradientes: 2 * 4 = 8 (lote efetivo = 8, padrao da matologia)
+  epochs: 100                      # 100 epocas (num_epochs padrao da matologia)
+  lr: 0.0001                       # 1e-4 (learning_rate padrao do config.json da matologia)
+  weight_decay: 0.01               # 1e-2 (AdamW)
+  optimizer: "adamw"
+  patience: 10                     # Early stopping apos 10 epocas sem melhora (conforme monitoramento de val_loss)
+  max_gradient_norm: 1.0
+  scheduler: "cosine"
+
+checkpoint:
+  output_dir: "checkpoints/exp_matologia_validated"
+  save_best: true
+  save_final: true

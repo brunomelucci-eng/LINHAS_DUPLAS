@@ -70,6 +70,8 @@ temp_raster_*
 outputs/
 outputs_*/
 inferencia/outputs/
+data_set/
+inferencia/drive-download-*/
 
 # --- 6. Pesos de Modelos e Checkpoints (.pt, .pth, .onnx) ---
 # Checkpoints pesados gerados durante o treino (centenas de MBs a GBs)
@@ -79,6 +81,7 @@ checkpoints/
 *.ckpt
 *.onnx
 *.safetensors
+*.zip
 modelos/*.pt
 modelos/*.pth
 

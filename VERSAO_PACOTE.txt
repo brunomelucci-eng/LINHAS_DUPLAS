@@ -1,8 +1,10 @@
-Pacote: linhas_cana_portatil
-Data: 24/08/2026
-Modelo: best_23_08_2026_12_imagens_run_001.pt
-Imagens usadas no treinamento: 12
-Threshold de centro calibrado: 0.38
-Pos-processamento: 1.1.0
+Pacote: linhas_cana_portatil_rowgraphnet
+Data: 09/10/2026
+Modelo: best_rowgraphnet_16_imagens.pt
+Arquitetura: RowGraphNet (mit_b2 + MultiTaskDecoder + ConnectivityRefiner)
+Imagens usadas no treinamento: 16
+Threshold de centro calibrado: 0.34
+Validation Dice: 0.767
+Pos-processamento: 1.2.0
 Python validado: 3.12 x64
 PyTorch validado: 2.6.0 + CUDA 12.4

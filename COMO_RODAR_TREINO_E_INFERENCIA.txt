@@ -1,0 +1,222 @@
+================================================================================
+  GUIA COMPLETO: PREPARACAO DE DADOS, TREINAMENTO DO MODELO E INFERENCIA
+================================================================================
+Projeto: Deteccao de Linhas Duplas de Cana-de-Acucar (LINHAS_DUPLAS)
+Ambiente: Windows PowerShell + Python 3.12 (venv) + PyTorch CUDA
+================================================================================
+
+Este guia ensina o passo a passo completo para:
+  1. Preparar o dataset (recorte de tiles, mascaras e divisoes espaciais)
+  2. Inspecionar e aprovar a qualidade do dataset (obrigatorio pelo sistema)
+  3. Treinar o modelo de rede neural (RowGraphNet / UNet)
+  4. Executar inferencias em imagens novas (individual ou em fila)
+
+--------------------------------------------------------------------------------
+0. CONFIGURACAO INICIAL NO POWERSHELL
+--------------------------------------------------------------------------------
+
+Antes de rodar qualquer comando, abra o Windows PowerShell na pasta raiz do projeto:
+
+  cd C:\Users\BRUNO\Documents\python\LINHAS_DUPLAS
+
+Para garantir que o PowerShell consiga rodar scripts sem bloqueio de politica:
+
+  Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+Voce pode rodar os comandos ativando o ambiente virtual:
+
+  .\.venv\Scripts\Activate.ps1
+
+Ou pode chamar diretamente o executavel do Python do ambiente:
+
+  .\.venv\Scripts\python.exe <comando>
+
+
+================================================================================
+1. ETAPA 1: PREPARACAO DO DATASET (prepare_dataset.py)
+================================================================================
+
+O QUE ESTA ETAPA FAZ:
+  - Le as imagens de treinamento (ortomosaicos GPKG/TIF), os talhoes (GeoJSON)
+    e as linhas anotadas de referencia (GeoJSON/SHP/GPKG) definidas no YAML.
+  - Reprojeta tudo automaticamente para o CRS UTM metrico local da area.
+  - Recorta a imagem em tiles menores (ex: 512x512 com overlap de 256px).
+  - Rasteriza as mascaras de treino (linha, centro da linha e angulo de orientacao).
+  - Divide as amostras em grupos espaciais (train, val, test) sem vazar dados.
+  - Salva tudo em arquivos binarios comprimidos .npz no diretorio de saida.
+
+ONDE CONFIGURAR AS IMAGENS DE TREINO:
+  As imagens e vetores de treino ficam listados na secao "inputs" do arquivo YAML:
+  - configs/base.yaml (base geral herdada)
+  - configs/all_annotations_rowgraphnet.yaml (configuracao oficial RowGraphNet)
+
+COMANDO POWERSHELL PARA GERAR O DATASET:
+
+  .\.venv\Scripts\python.exe scripts\prepare_dataset.py --config configs\all_annotations_rowgraphnet.yaml
+
+PARAMETROS:
+  --config : Caminho para o arquivo YAML de configuracao desejado.
+             (Padrao: configs\unet_resnet34.yaml)
+
+ONDE FICAM OS DADOS GERADOS:
+  - Pasta: outputs_all_annotations_rowgraphnet\dataset\train\
+  - Pasta: outputs_all_annotations_rowgraphnet\dataset\val\
+  - Pasta: outputs_all_annotations_rowgraphnet\dataset\test\
+
+
+================================================================================
+2. ETAPA 2: INSPECAO E APROVACAO DO DATASET (inspect_data.py)
+================================================================================
+
+O QUE ESTA ETAPA FAZ:
+  - O sistema possui uma trava de qualidade rigorosa (dataset_quality).
+  - Ele valida se nenhum tile tem valores NaN/Infinitos, se a fracao de fundo
+    esta balanceada e se as dimensoes estao perfeitas.
+  - Gera o arquivo obrigatorio "dataset_inspection_report.json" com status "approved".
+  - ATENCAO: O script de treinamento (train.py) BLOQUEIA a execucao se essa
+    inspecao nao tiver sido rodada e aprovada!
+
+COMANDO POWERSHELL PARA INSPECAO:
+
+  .\.venv\Scripts\python.exe scripts\inspect_data.py --dataset-dir outputs_all_annotations_rowgraphnet\dataset --output outputs_all_annotations_rowgraphnet\dataset_inspection_report.json --config configs\all_annotations_rowgraphnet.yaml
+
+PARAMETROS:
+  --dataset-dir : Pasta onde estao os splits do dataset gerados na Etapa 1.
+  --output      : Caminho onde sera salvo o relatorio JSON de aprovacao.
+  --config      : Arquivo YAML com os limites de qualidade esperados.
+
+
+================================================================================
+3. ETAPA 3: TREINAMENTO DO MODELO (train.py)
+================================================================================
+
+O QUE ESTA ETAPA FAZ:
+  - Carrega a arquitetura de rede neural configurada no YAML:
+      * RowGraphNet (encoder SegFormer mit_b2 + MultiTaskDecoder + ConnectivityRefiner)
+      * ou UNet (ResNet34 / ResNet50)
+  - Usa GPU com aceleracao CUDA e precisao mista (FP16) para alto desempenho.
+  - Treina a rede para prever simultaneamente:
+      1. Mascara de cana
+      2. Centro da linha (centerline)
+      3. Seno e Cosseno da orientacao da linha
+  - Salva o melhor checkpoint com base na metrica monitorada (val_center_dice).
+  - No final, calibra automaticamente o limiar otimo (ex: 0.34) e salva o
+    arquivo sidecar: best_modelo.pt.threshold.json
+
+COMANDO POWERSHELL PARA INICIAR O TREINO DO ZERO:
+
+  .\.venv\Scripts\python.exe scripts\train.py --config configs\all_annotations_rowgraphnet.yaml
+
+COMANDO POWERSHELL PARA CONTINUAR UM TREINO (RESUME):
+  Se o treino for interrompido ou voce quiser treinar mais epocas a partir
+  de um checkpoint salvo:
+
+  .\.venv\Scripts\python.exe scripts\train.py --config configs\all_annotations_rowgraphnet.yaml --resume outputs_all_annotations_rowgraphnet\checkpoints\last_26_09_2026_16_imagens_run_001.pt
+
+PARAMETROS:
+  --config : Arquivo YAML definindo hiperparametros (lr, batch_size, epochs, etc).
+  --resume : (Opcional) Caminho do arquivo .pt do checkpoint para continuar.
+
+COMO ACOMPANHAR A GPU ENQUANTO TREINA (em outro terminal):
+  nvidia-smi -l 5
+
+ONDE O MODELO TREINADO FICA SALVO:
+  - Checkpoint do melhor modelo:
+    outputs_all_annotations_rowgraphnet\checkpoints\best_*.pt
+  - Checkpoint da ultima epoca:
+    outputs_all_annotations_rowgraphnet\checkpoints\last_*.pt
+  - Limiar calibrado:
+    outputs_all_annotations_rowgraphnet\checkpoints\best_*.pt.threshold.json
+
+DICA DE ORGANIZACAO:
+  Para colocar o modelo na pasta oficial de producao:
+  Copy-Item "outputs_all_annotations_rowgraphnet\checkpoints\best_*.pt" "modelos\best_rowgraphnet_16_imagens.pt"
+  Copy-Item "outputs_all_annotations_rowgraphnet\checkpoints\best_*.pt.threshold.json" "modelos\best_rowgraphnet_16_imagens.pt.threshold.json"
+
+
+================================================================================
+4. ETAPA 4: INFERENCIA / PREDICAO EM NOVAS IMAGENS (predict.py)
+================================================================================
+
+O QUE ESTA ETAPA FAZ:
+  - Le o ortomosaico de alta resolucao e o poligono do talhao de corte (ROI).
+  - Executa a inferencia por Janela Deslizante (Sliding Window) com overlap
+    usando a GPU, montando o mosaico continuo de probabilidades.
+  - Aplica o limiar calibrado (threshold 0.34).
+  - Executa o pipeline geometrico completo na CPU:
+      * Esqueletizacao e afinamento topologico
+      * Conversao de esqueleto para grafo
+      * Suavizacao regularizada de curvas (fairing)
+      * Refinamento de linhas duplas (fechamento de gaps e reparo de pares)
+      * Validação contratual de CRS e atributos
+  - Gera o produto final em GeoPackage (.gpkg) com a camada 'predicted_rows'
+    pronta para abrir no QGIS.
+
+--------------------------------------------------------------------------------
+OPCAO 4A: USANDO O SCRIPT POWERSHELL PRONTO (Mais Recomendado)
+--------------------------------------------------------------------------------
+
+O script EXECUTAR_INFERENCIA.ps1 ja vem configurado por padrao com o ultimo modelo
+RowGraphNet e a configuracao calibrada.
+
+Comando no PowerShell:
+
+  powershell -ExecutionPolicy Bypass -File .\EXECUTAR_INFERENCIA.ps1 `
+    -Imagem "C:\Users\BRUNO\Documents\PROJETOS\DUPLO\areas_novas\14\14.gpkg" `
+    -Talhao "C:\Users\BRUNO\Documents\PROJETOS\DUPLO\areas_novas\14\14_TALHAO.geojson" `
+    -Saida  "C:\Users\BRUNO\Documents\PROJETOS\DUPLO\areas_novas\14\linhas_14.gpkg"
+
+--------------------------------------------------------------------------------
+OPCAO 4B: COMANDO DIRETO VIA PYTHON NO POWERSHELL
+--------------------------------------------------------------------------------
+
+Se preferir rodar direto chamando o script Python:
+
+  .\.venv\Scripts\python.exe scripts\predict.py `
+    --config configs\inference_rowgraphnet.yaml `
+    --checkpoint modelos\best_rowgraphnet_16_imagens.pt `
+    --orthomosaic "C:\Users\BRUNO\Documents\PROJETOS\DUPLO\areas_novas\14\14.gpkg" `
+    --roi "C:\Users\BRUNO\Documents\PROJETOS\DUPLO\areas_novas\14\14_TALHAO.geojson" `
+    --output "C:\Users\BRUNO\Documents\PROJETOS\DUPLO\areas_novas\14\linhas_14.gpkg"
+
+PARAMETROS DO PREDICT:
+  --config      : Arquivo YAML de inferencia (configs\inference_rowgraphnet.yaml).
+  --checkpoint  : Caminho do modelo treinado .pt (modelos\best_rowgraphnet_16_imagens.pt).
+                  O script detecta automaticamente o arquivo de limiar .threshold.json.
+  --orthomosaic : Imagem raster de entrada (formato GPKG ou GeoTIFF).
+  --roi         : Poligono do talhao de corte (formato GeoJSON, GPKG ou Shapefile).
+  --output      : Caminho onde sera salvo o arquivo vetorial de saida (.gpkg).
+
+--------------------------------------------------------------------------------
+OPCAO 4C: EXECUTAR EM FILA / LOTE AUTOMATICO (MULTIPLAS AREAS)
+--------------------------------------------------------------------------------
+
+Para rodar varias areas em sequencia sem precisar esperar uma por uma:
+
+  1. Abra o arquivo EXECUTAR_FILA.ps1 (ou EXECUTAR_FILA_PROXIMAS.ps1)
+  2. Ajuste a lista $Jobs com os caminhos das suas imagens e talhoes
+  3. No PowerShell, execute:
+
+     powershell -ExecutionPolicy Bypass -File .\EXECUTAR_FILA.ps1
+
+
+================================================================================
+5. RESUMO RAPIDO (CHEATSHEET COPIAR E COLAR)
+================================================================================
+
+# 1. Ativar ambiente e pasta
+cd C:\Users\BRUNO\Documents\python\LINHAS_DUPLAS
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+# 2. Preparar dataset (tiles .npz)
+.\.venv\Scripts\python.exe scripts\prepare_dataset.py --config configs\all_annotations_rowgraphnet.yaml
+
+# 3. Inspecionar e aprovar qualidade dos dados
+.\.venv\Scripts\python.exe scripts\inspect_data.py --dataset-dir outputs_all_annotations_rowgraphnet\dataset --output outputs_all_annotations_rowgraphnet\dataset_inspection_report.json --config configs\all_annotations_rowgraphnet.yaml
+
+# 4. Iniciar o treinamento do modelo
+.\.venv\Scripts\python.exe scripts\train.py --config configs\all_annotations_rowgraphnet.yaml
+
+# 5. Executar inferencia em uma area nova
+powershell -ExecutionPolicy Bypass -File .\EXECUTAR_INFERENCIA.ps1 -Imagem "C:\caminho\imagem.gpkg" -Talhao "C:\caminho\talhao.geojson" -Saida "C:\caminho\linhas_resultado.gpkg"
+================================================================================

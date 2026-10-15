@@ -1,0 +1,45 @@
+# RowGraphNet Training Configuration
+# Conservative starting profile for a 4 GB GPU. Values are not agronomically calibrated.
+
+experiment:
+  name: "matologia_sugarcane_rtx3050"
+  description: "Baseline experimental inspirado apenas nas praticas operacionais da Matologia"
+  seed: 42
+
+hardware:
+  device: "cuda"
+  use_amp: true                    # Mixed Precision FP16 via PyTorch GradScaler (economiza 50% de VRAM)
+  num_workers: 0                   # 0 para Windows (evita overhead de spawn e conflito em VRT/GDAL)
+  pin_memory: true                 # Acelera transferencia da RAM (32GB) para a VRAM (4GB)
+  resource_fraction: 0.70          # Trava de segurança de 70% da GPU/CPU
+
+model:
+  model_name: "nvidia/mit-b2"      # SegFormer B2 (ou nvidia/mit-b0 para versao ultra-leve < 1GB)
+  in_channels: 3
+  decoder_channels: 128
+  refine_connectivity: false       # Ativar somente apos existir supervisao real/sintetica de reparo
+  pretrained: true
+
+dataset:
+  manifests_dir: "data_set/manifests"
+  working_dir: "data_set/_working"
+  tile_size: 256                   # Tamanho de bloco da matologia (256x256)
+  stride: 256                      # Deslocamento entre patches (ou 192 para 25% overlap)
+  min_valid_pixels: 10
+  centerline_buffer_m: 0.10        # 10 cm para cada lado; alvo central com 20 cm de largura total
+
+training:
+  batch_size: 2                    # Lote fisico seguro para 4.0 GB VRAM
+  grad_accum_steps: 1              # Passos de acumulacao (1 = batch 2, 2 = batch efetivo 4)
+  epochs: 20                       # 20 epocas (padrao MLOps matologia para linhas)
+  lr: 0.0001                       # 1e-4
+  weight_decay: 0.01               # 1e-2
+  optimizer: "adamw"
+  patience: 5                      # Early stopping apos 5 epocas sem melhora
+  max_gradient_norm: 1.0
+  scheduler: "cosine"
+
+checkpoint:
+  output_dir: "checkpoints/exp_matologia_rtx3050"
+  save_best: true
+  save_final: true

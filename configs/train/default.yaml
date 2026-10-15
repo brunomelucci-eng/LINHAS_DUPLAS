@@ -1,0 +1,46 @@
+# Strict baseline accepted by rowgraphnet-training. These are software defaults,
+# not agronomically calibrated hyperparameters.
+experiment:
+  name: rowgraphnet_baseline
+  description: Baseline centerline and orientation training profile
+  seed: 2026
+
+hardware:
+  device: auto
+  use_amp: true
+  num_workers: 0
+  pin_memory: null
+  resource_fraction: 0.70
+
+model:
+  model_name: nvidia/mit-b2
+  in_channels: 3
+  decoder_channels: 128
+  refine_connectivity: false
+  pretrained: true
+
+dataset:
+  manifests_dir: data_set/manifests
+  working_dir: data_set/_working
+  tile_size: 256
+  stride: 256
+  min_valid_pixels: 10
+  centerline_buffer_m: 0.10
+  proxy_band_width_m: null
+
+training:
+  batch_size: 2
+  grad_accum_steps: 1
+  epochs: 20
+  lr: 0.0001
+  weight_decay: 0.01
+  optimizer: adamw
+  patience: 5
+  max_gradient_norm: 1.0
+  scheduler: cosine
+
+checkpoint:
+  output_dir: checkpoints/rowgraphnet
+  save_best: true
+  save_final: true
+  resume: null

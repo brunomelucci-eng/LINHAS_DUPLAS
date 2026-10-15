@@ -33,13 +33,53 @@ dependencies = [
     "pyyaml",
     "tensorboard",
     "rich",
+    "transformers",
 ]
 
 [project.optional-dependencies]
+model = [
+    "transformers",
+]
 dev = [
     "pytest",
 ]
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["src*"]
+where = ["src"]
+include = ["*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src", "tests"]
+extend-exclude = [
+    "src/cli.py",
+    "src/config.py",
+    "src/data",
+    "src/diagnostics",
+    "src/geospatial",
+    "src/inference",
+    "src/logging_utils.py",
+    "src/losses",
+    "src/metrics",
+    "src/models",
+    "src/postprocessing",
+    "src/seed.py",
+    "src/training",
+    "src/visualization",
+    "tests/test_*.py",
+    "scripts/create_roi3_annotation_template.py",
+    "scripts/diagnose_roi.py",
+    "scripts/export_model.py",
+    "scripts/inspect_data.py",
+    "scripts/predict.py",
+    "scripts/prepare_dataset.py",
+    "scripts/refine_existing_vectors.py",
+    "scripts/train.py",
+    "scripts/validate.py",
+    "scripts/validate_two_stage_gaussian.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["E501"]

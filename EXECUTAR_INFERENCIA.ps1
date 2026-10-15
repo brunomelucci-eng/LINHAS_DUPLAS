@@ -6,7 +6,11 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Talhao,
 
-    [string]$Saida
+    [string]$Saida,
+
+    [string]$Config,
+
+    [string]$Modelo
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,8 +18,12 @@ Set-StrictMode -Version Latest
 Set-Location -LiteralPath $PSScriptRoot
 
 $Python = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
-$Config = Join-Path $PSScriptRoot "configs\inference_portable.yaml"
-$Modelo = Join-Path $PSScriptRoot "modelos\best_23_08_2026_12_imagens_run_001.pt"
+if ([string]::IsNullOrWhiteSpace($Config)) {
+    $Config = Join-Path $PSScriptRoot "configs\inference_rowgraphnet.yaml"
+}
+if ([string]::IsNullOrWhiteSpace($Modelo)) {
+    $Modelo = Join-Path $PSScriptRoot "modelos\best_rowgraphnet_16_imagens.pt"
+}
 
 foreach ($Arquivo in @($Python, $Config, $Modelo, $Imagem, $Talhao)) {
     if (-not (Test-Path -LiteralPath $Arquivo)) {

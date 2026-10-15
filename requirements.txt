@@ -21,3 +21,4 @@ pyyaml
 tensorboard
 rich
 pytest
+transformers

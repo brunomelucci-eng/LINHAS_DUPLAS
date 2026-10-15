@@ -1,0 +1,35 @@
+# Configuracao para inferencia com a arquitetura RowGraphNet (ultimo modelo: 16 imagens)
+# Os caminhos da imagem e do talhao sao informados no comando de inferencia.
+project:
+  name: sugarcane_rows_rowgraphnet
+  output_dir: outputs
+
+outputs:
+  overwrite_existing: true
+
+model:
+  architecture: rowgraphnet
+  encoder: mit_b2
+  pretrained: true
+  input_channels: 3
+  output_channels: 4
+  decoder_channels: 128
+  refine_connectivity: true
+  refiner_hidden_channels: 64
+
+training:
+  threshold_calibration:
+    enabled: true
+    min_threshold: 0.30
+    max_threshold: 0.90
+    threshold_step: 0.02
+    minimum_validation_dice: 0.30
+    max_predicted_fraction: 0.25
+    min_predicted_to_target_ratio: 0.25
+    max_predicted_to_target_ratio: 3.00
+    fail_on_rejected: true
+
+inference:
+  threshold_calibration:
+    enabled: true
+    required: true

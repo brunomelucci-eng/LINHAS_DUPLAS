@@ -1,0 +1,47 @@
+# RowGraphNet Training Configuration - RTX 3060 12GB (60 Épocas)
+# Configuração otimizada para o novo dataset filtrado (< 50cm descartado)
+# Preserva modelos existentes salvando em checkpoints/exp_rtx3060_tile256_60ep
+
+experiment:
+  name: "rtx3060_tile256_60ep"
+  description: "Treinamento de 60 epocas com dataset limpo, 63180 no split de teste"
+  seed: 42
+
+hardware:
+  device: "cuda"
+  use_amp: true                    # Mixed Precision FP16
+  num_workers: 2                   # 2 workers para estabilidade no Windows
+  pin_memory: true                 # Transferência rápida DMA na RAM
+  resource_fraction: 0.70          # Trava de segurança de 70% da GPU/CPU
+
+model:
+  model_name: "nvidia/mit-b2"      # SegFormer B2
+  in_channels: 3                   # RGB
+  decoder_channels: 128
+  refine_connectivity: false
+  pretrained: true
+
+dataset:
+  manifests_dir: "data_set/manifests"
+  working_dir: "data_set/_working"
+  tile_size: 256                   # 256x256
+  stride: 128                      # 50% de sobreposição
+  min_valid_pixels: 20             # Pelo menos 20 pixels válidos por patch
+  centerline_buffer_m: 0.10        # 10 cm de buffer de supervisão para cada lado da linha
+  proxy_band_width_m: null
+
+training:
+  batch_size: 28                   # 28 patches por micro-passo (~4.2 GB VRAM)
+  grad_accum_steps: 2              # Acumula 2 passos (Lote efetivo idêntico = 56)
+  epochs: 60                       # 60 épocas solicitadas
+  lr: 0.0001
+  weight_decay: 0.01
+  optimizer: "adamw"
+  patience: 20                     # Tolerância de 20 épocas para early stopping
+  max_gradient_norm: 1.0
+  scheduler: "cosine"
+
+checkpoint:
+  output_dir: "checkpoints/exp_rtx3060_tile256_60ep"
+  save_best: true
+  save_final: true
