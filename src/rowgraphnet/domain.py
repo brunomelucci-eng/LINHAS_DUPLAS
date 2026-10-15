@@ -241,6 +241,11 @@ class RowRecord:
             not np.isfinite(self.spacing_local_m) or self.spacing_local_m <= 0.0
         ):
             raise ValueError("local spacing must be finite and positive or None")
+        if np.isfinite(self.orientation_deg):
+            deg = float(self.orientation_deg % 180.0)
+            if deg >= 180.0 or abs(deg - 180.0) < 1e-7:
+                deg = 0.0
+            self.orientation_deg = deg
         if not np.isfinite(self.orientation_deg) or not 0.0 <= self.orientation_deg < 180.0:
             raise ValueError("row axial orientation must lie in [0, 180)")
         if self.topology_status not in {"valid", "ambiguous", "rejected"}:

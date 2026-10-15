@@ -52,7 +52,12 @@ def _axial_azimuth_deg(geometry: LineString) -> float:
     azimuth = np.arctan2(differences[valid, 0], differences[valid, 1])
     sin2 = np.average(np.sin(2.0 * azimuth), weights=lengths[valid])
     cos2 = np.average(np.cos(2.0 * azimuth), weights=lengths[valid])
-    return float(np.degrees(0.5 * np.arctan2(sin2, cos2)) % 180.0)
+    deg = float(np.degrees(0.5 * np.arctan2(sin2, cos2)) % 180.0)
+    if deg >= 180.0 or deg < 0.0:
+        deg = deg % 180.0
+    if deg >= 180.0 or abs(deg - 180.0) < 1e-7:
+        deg = 0.0
+    return float(np.clip(deg, 0.0, 179.999999))
 
 
 def _smooth_safely(geometry: LineString, maximum_deviation_m: float | None) -> LineString:
