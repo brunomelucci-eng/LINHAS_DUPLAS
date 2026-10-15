@@ -83,8 +83,10 @@ def _source_component_mask(
     observed: np.ndarray,
     start: tuple[int, int],
     goal: tuple[int, int],
+    labels: np.ndarray | None = None,
 ) -> np.ndarray:
-    labels, _ = label(observed, structure=np.ones((3, 3), dtype=np.uint8))
+    if labels is None:
+        labels, _ = label(observed, structure=np.ones((3, 3), dtype=np.uint8))
     allowed_labels = {int(labels[start]), int(labels[goal])} - {0}
     if not allowed_labels:
         return np.zeros_like(observed, dtype=bool)
@@ -97,29 +99,56 @@ def _corridor_mask(
     half_width_m: float,
 ) -> np.ndarray:
     height, width = prediction.center.shape
-    rows, cols = np.indices((height, width), dtype=float)
-    xs = (
-        prediction.transform.a * (cols + 0.5)
-        + prediction.transform.b * (rows + 0.5)
-        + prediction.transform.c
-    )
-    ys = (
-        prediction.transform.d * (cols + 0.5)
-        + prediction.transform.e * (rows + 0.5)
-        + prediction.transform.f
-    )
+    corridor = np.zeros((height, width), dtype=bool)
+
     start = np.asarray(connector.coords[0], dtype=float)
     end = np.asarray(connector.coords[-1], dtype=float)
     delta = end - start
     length_squared = float(np.dot(delta, delta))
     if length_squared <= np.finfo(float).eps:
-        return np.zeros((height, width), dtype=bool)
+        return corridor
+
+    min_x = min(start[0], end[0]) - half_width_m
+    max_x = max(start[0], end[0]) + half_width_m
+    min_y = min(start[1], end[1]) - half_width_m
+    max_y = max(start[1], end[1]) + half_width_m
+
+    inv = ~prediction.transform
+    corners = [(min_x, min_y), (min_x, max_y), (max_x, min_y), (max_x, max_y)]
+    pixel_pts = [inv * pt for pt in corners]
+    col_coords = [p[0] for p in pixel_pts]
+    row_coords = [p[1] for p in pixel_pts]
+
+    col_min = max(0, int(math.floor(min(col_coords) - 0.5)) - 1)
+    col_max = min(width, int(math.ceil(max(col_coords) + 0.5)) + 2)
+    row_min = max(0, int(math.floor(min(row_coords) - 0.5)) - 1)
+    row_max = min(height, int(math.ceil(max(row_coords) + 0.5)) + 2)
+
+    if col_min >= col_max or row_min >= row_max:
+        return corridor
+
+    sub_rows, sub_cols = np.indices((row_max - row_min, col_max - col_min), dtype=float)
+    sub_rows += row_min
+    sub_cols += col_min
+
+    xs = (
+        prediction.transform.a * (sub_cols + 0.5)
+        + prediction.transform.b * (sub_rows + 0.5)
+        + prediction.transform.c
+    )
+    ys = (
+        prediction.transform.d * (sub_cols + 0.5)
+        + prediction.transform.e * (sub_rows + 0.5)
+        + prediction.transform.f
+    )
+
     projection = ((xs - start[0]) * delta[0] + (ys - start[1]) * delta[1]) / length_squared
     projection = np.clip(projection, 0.0, 1.0)
     closest_x = start[0] + projection * delta[0]
     closest_y = start[1] + projection * delta[1]
     distance = np.hypot(xs - closest_x, ys - closest_y)
-    return distance <= half_width_m
+    corridor[row_min:row_max, col_min:col_max] = distance <= half_width_m
+    return corridor
 
 
 def _reconstruct_path(
@@ -159,27 +188,36 @@ def _geometry_stays_traversable(
     return True
 
 
-def repair_candidate_path(
-    candidate: CandidateConnection,
+@dataclass(slots=True)
+class PathRepairContext:
+    """Precomputed image-level structures reused across all repair candidates."""
+
+    valid: np.ndarray
+    center: np.ndarray
+    uncertainty: np.ndarray
+    observed: np.ndarray
+    labels: np.ndarray
+    base_cost: np.ndarray
+    world_orientation: FusedOrientationField
+    move_world: tuple[tuple[float, float, float, float], ...]
+    pixel_size: float
+    axial_s: np.ndarray
+    axial_c: np.ndarray
+    axial_confidence: np.ndarray
+    minimum_cell_cost: float
+
+
+def prepare_path_repair_context(
     prediction: RasterPrediction,
-    spacing: SpacingEstimate,
     weights: PathCostWeights | None = None,
     orientation_field: FusedOrientationField | None = None,
-) -> RepairPath | None:
-    """Find the lowest-cost smooth path, or abstain if none is feasible."""
+) -> PathRepairContext | None:
+    """Precalculate global rasters, connected components, and orientation tensors once per scene."""
 
     crs = CRS.from_user_input(prediction.crs)
     if not _is_metric(crs):
         raise ValueError("path repair requires a projected CRS with metre axes")
-    if spacing.median_m <= 0:
-        raise ValueError("spacing median must be positive")
     cost_weights = (weights or PathCostWeights()).normalized()
-    start_xy = tuple(map(float, candidate.geometry.coords[0]))
-    goal_xy = tuple(map(float, candidate.geometry.coords[-1]))
-    start = _pixel_from_world(prediction, start_xy)
-    goal = _pixel_from_world(prediction, goal_xy)
-    if start == goal:
-        return None
 
     valid = np.isfinite(prediction.center) & np.isfinite(prediction.uncertainty)
     if prediction.valid_mask is not None:
@@ -197,25 +235,12 @@ def repair_candidate_path(
         return None
     observed_threshold = float(np.quantile(valid_values, 0.90))
     observed = valid & (center >= observed_threshold)
-    source_mask = _source_component_mask(observed, start, goal)
-    crossing_mask = observed & ~source_mask
+    labels, _ = label(observed, structure=np.ones((3, 3), dtype=np.uint8))
 
     pixel_size = _metric_pixel_size(prediction)
-    distribution_width = max(
-        1.4826 * spacing.mad_m,
-        spacing.median_m * spacing.entropy,
-        pixel_size,
-    )
-    # The midline between adjacent rows is the natural maximum corridor.  A
-    # broad spacing posterior narrows it, encouraging abstention under uncertainty.
-    corridor_half_width = max((spacing.median_m - distribution_width) / 2.0, pixel_size)
-    corridor = _corridor_mask(prediction, candidate.geometry, corridor_half_width)
-    traversable = valid & corridor & ~crossing_mask
-    traversable[start] = True
-    traversable[goal] = True
-
     background_cost = 1.0 - center
     base_cost = cost_weights.background * background_cost + cost_weights.uncertainty * uncertainty
+
     if orientation_field is None:
         learned = FusedOrientationField(
             sin2=np.asarray(prediction.orientation_sin2, dtype=float),
@@ -232,6 +257,7 @@ def repair_candidate_path(
         ):
             raise ValueError("orientation_field must match the prediction grid")
         world_orientation = orientation_field
+
     axial_s = np.asarray(world_orientation.sin2, dtype=float)
     axial_c = np.asarray(world_orientation.cos2, dtype=float)
     axial_confidence = np.clip(np.asarray(world_orientation.confidence, dtype=float), 0.0, 1.0)
@@ -251,6 +277,91 @@ def repair_candidate_path(
         )
         for d_row, d_col in _MOVES
     )
+    minimum_cell_cost = float(np.min(base_cost[valid])) if np.any(valid) else 0.0
+
+    return PathRepairContext(
+        valid=valid,
+        center=center,
+        uncertainty=uncertainty,
+        observed=observed,
+        labels=labels,
+        base_cost=base_cost,
+        world_orientation=world_orientation,
+        move_world=move_world,
+        pixel_size=pixel_size,
+        axial_s=axial_s,
+        axial_c=axial_c,
+        axial_confidence=axial_confidence,
+        minimum_cell_cost=minimum_cell_cost,
+    )
+
+
+def repair_candidate_path(
+    candidate: CandidateConnection,
+    prediction: RasterPrediction,
+    spacing: SpacingEstimate,
+    weights: PathCostWeights | None = None,
+    orientation_field: FusedOrientationField | None = None,
+    context: PathRepairContext | None = None,
+) -> RepairPath | None:
+    """Find the lowest-cost smooth path, or abstain if none is feasible."""
+
+    crs = CRS.from_user_input(prediction.crs)
+    if not _is_metric(crs):
+        raise ValueError("path repair requires a projected CRS with metre axes")
+    if spacing.median_m <= 0:
+        raise ValueError("spacing median must be positive")
+    cost_weights = (weights or PathCostWeights()).normalized()
+    start_xy = tuple(map(float, candidate.geometry.coords[0]))
+    goal_xy = tuple(map(float, candidate.geometry.coords[-1]))
+    start = _pixel_from_world(prediction, start_xy)
+    goal = _pixel_from_world(prediction, goal_xy)
+    if start == goal:
+        return None
+
+    ctx = context or prepare_path_repair_context(
+        prediction, weights=weights, orientation_field=orientation_field
+    )
+    if ctx is None:
+        return None
+
+    valid = ctx.valid
+    center = ctx.center
+    uncertainty = ctx.uncertainty
+    observed = ctx.observed
+    labels = ctx.labels
+    base_cost = ctx.base_cost
+    pixel_size = ctx.pixel_size
+    move_world = ctx.move_world
+    axial_s = ctx.axial_s
+    axial_c = ctx.axial_c
+    axial_confidence = ctx.axial_confidence
+    minimum_cell_cost = ctx.minimum_cell_cost
+
+    distribution_width = max(
+        1.4826 * spacing.mad_m,
+        spacing.median_m * spacing.entropy,
+        pixel_size,
+    )
+    # The midline between adjacent rows is the natural maximum corridor.  A
+    # broad spacing posterior narrows it, encouraging abstention under uncertainty.
+    corridor_half_width = max((spacing.median_m - distribution_width) / 2.0, pixel_size)
+    corridor = _corridor_mask(prediction, candidate.geometry, corridor_half_width)
+
+    # Fast localized crossing mask computation on corridor pixels only
+    allowed_labels = {int(labels[start]), int(labels[goal])} - {0}
+    corridor_indices = np.where(corridor)
+    if not allowed_labels:
+        crossing = observed[corridor_indices]
+    else:
+        crossing = observed[corridor_indices] & ~np.isin(
+            labels[corridor_indices], list(allowed_labels)
+        )
+
+    traversable = np.zeros_like(valid, dtype=bool)
+    traversable[corridor_indices] = valid[corridor_indices] & ~crossing
+    traversable[start] = True
+    traversable[goal] = True
 
     start_state = (start[0], start[1], -1)
     queue: list[tuple[float, float, int, int, int]] = [(0.0, 0.0, *start_state)]

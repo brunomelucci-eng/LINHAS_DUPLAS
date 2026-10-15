@@ -38,7 +38,12 @@ from rowgraphnet.geometry.orientation_field import (
     orientation_field_to_world,
     structure_tensor_orientation,
 )
-from rowgraphnet.geometry.path_repair import PathCostWeights, repair_candidate_path
+from rowgraphnet.geometry.path_repair import (
+    PathCostWeights,
+    PathRepairContext,
+    prepare_path_repair_context,
+    repair_candidate_path,
+)
 from rowgraphnet.geometry.segment_extractor import extract_segments
 from rowgraphnet.geometry.spacing_estimator import SpacingField, estimate_spacing
 from rowgraphnet.geometry.vector_refinement import RefinementResult, refine_rows
@@ -236,8 +241,16 @@ def _path_intersects_unrelated_segment(
     path: LineString,
     candidate: CandidateConnection,
     segments: list[ExtractedSegment],
+    spatial_tree: Any = None,
 ) -> bool:
     source_ids = {candidate.segment_a, candidate.segment_b}
+    if spatial_tree is not None:
+        candidate_indices = spatial_tree.query(path)
+        for idx in candidate_indices:
+            seg = segments[idx]
+            if seg.segment_id not in source_ids and path.intersects(seg.geometry):
+                return True
+        return False
     return any(
         segment.segment_id not in source_ids and path.intersects(segment.geometry)
         for segment in segments
@@ -454,6 +467,14 @@ def postprocess_prediction(
         curvature=settings.path_curvature_weight,
         uncertainty=settings.path_uncertainty_weight,
     )
+    from shapely import STRtree
+
+    segments_tree = STRtree([s.geometry for s in segments]) if segments else None
+    repair_context = prepare_path_repair_context(
+        prediction,
+        weights=effective_path_cost_weights,
+        orientation_field=world_fused,
+    )
     for candidate in all_candidates:
         path = repair_candidate_path(
             candidate,
@@ -461,13 +482,16 @@ def postprocess_prediction(
             spacing_for_candidate[candidate.candidate_id],
             weights=effective_path_cost_weights,
             orientation_field=world_fused,
+            context=repair_context,
         )
         if path is None:
             candidate.ambiguous = candidate.ambiguous or (
                 candidate.probability >= settings.minimum_connection_probability
             )
             candidate.evidence["abstention_reason"] = "no_feasible_raster_path"
-        elif _path_intersects_unrelated_segment(path.geometry, candidate, segments):
+        elif _path_intersects_unrelated_segment(
+            path.geometry, candidate, segments, spatial_tree=segments_tree
+        ):
             candidate.ambiguous = candidate.ambiguous or (
                 candidate.probability >= settings.minimum_connection_probability
             )

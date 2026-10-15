@@ -12,10 +12,12 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 from shapely.geometry.base import BaseGeometry
+from shapely.strtree import STRtree
 
 from rowgraphnet.domain import (
     CandidateConnection,
@@ -366,6 +368,8 @@ def check_boundary_extension_vetoes(
     field_boundary: BaseGeometry,
     config: BoundaryExtensionConfig,
     pixel_size_m: float | None = None,
+    spatial_tree: Any | None = None,
+    segment_map: dict[str, ExtractedSegment] | None = None,
 ) -> tuple[bool, str | None]:
     """Verify all hard veto rules for a boundary extension.
 
@@ -393,18 +397,32 @@ def check_boundary_extension_vetoes(
 
     # 2. Cannot cross or overlap any observed segment
     safe_corridor = spacing_m * config.safe_corridor_fraction
-    for other in segments:
+
+    # Check for self-crossing against the rest of the own segment
+    own_segment = (
+        segment_map.get(segment_id)
+        if segment_map is not None
+        else next((s for s in segments if s.segment_id == segment_id), None)
+    )
+    if own_segment is not None:
+        coords = list(own_segment.geometry.coords)
+        if len(coords) >= 3:
+            # If candidate touches coords[0], check against coords[1:]
+            # If candidate touches coords[-1], check against coords[:-1]
+            p_start = candidate_line.coords[0]
+            d0 = math.hypot(p_start[0] - coords[0][0], p_start[1] - coords[0][1])
+            rest = LineString(coords[1:]) if d0 <= tolerance else LineString(coords[:-1])
+            if candidate_line.intersects(rest):
+                return False, "extension_intersects_own_segment"
+
+    if spatial_tree is not None:
+        hit_indices = spatial_tree.query(candidate_line.buffer(safe_corridor))
+        other_candidates = [segments[int(idx)] for idx in hit_indices]
+    else:
+        other_candidates = segments
+
+    for other in other_candidates:
         if other.segment_id == segment_id:
-            # Check for self-crossing against the rest of the own segment
-            coords = list(other.geometry.coords)
-            if len(coords) >= 3:
-                # If candidate touches coords[0], check against coords[1:]
-                # If candidate touches coords[-1], check against coords[:-1]
-                p_start = candidate_line.coords[0]
-                d0 = math.hypot(p_start[0] - coords[0][0], p_start[1] - coords[0][1])
-                rest = LineString(coords[1:]) if d0 <= tolerance else LineString(coords[:-1])
-                if candidate_line.intersects(rest):
-                    return False, "extension_intersects_own_segment"
             continue
 
         if candidate_line.crosses(other.geometry):
@@ -455,6 +473,8 @@ def generate_boundary_extension_candidates(
     pixel_size = _metric_pixel_size(prediction)
 
     candidates: list[CandidateConnection] = []
+    spatial_tree = STRtree([s.geometry for s in segments]) if segments else None
+    segment_map = {s.segment_id: s for s in segments}
 
     for seg in segments:
         # Minimum observed length required for stable endpoint direction
@@ -507,6 +527,8 @@ def generate_boundary_extension_candidates(
                 field_boundary,
                 config,
                 pixel_size_m=pixel_size,
+                spatial_tree=spatial_tree,
+                segment_map=segment_map,
             )
             if not passed:
                 continue

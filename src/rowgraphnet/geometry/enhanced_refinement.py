@@ -17,9 +17,11 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 from pyproj import CRS
+from scipy.spatial import cKDTree
 from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import linemerge, unary_union
+from shapely.strtree import STRtree
 
 from rowgraphnet.domain import RowRecord
 from rowgraphnet.geometry.vector_refinement import (
@@ -104,6 +106,7 @@ def _has_parallel_neighbor_support(
     current_ids: set[str],
     spacing_m: float,
     window_m: float,
+    spatial_tree: Any | None = None,
 ) -> bool:
     """Check if there is at least one parallel row nearby that runs continuously along the gap."""
     connector = LineString([p_a, p_b])
@@ -113,7 +116,13 @@ def _has_parallel_neighbor_support(
     min_spacing = 0.65 * spacing_m
     max_spacing = 1.45 * spacing_m
 
-    for row in all_rows:
+    if spatial_tree is not None:
+        hit_indices = spatial_tree.query(buffer_zone)
+        candidate_rows = [all_rows[int(idx)] for idx in hit_indices]
+    else:
+        candidate_rows = all_rows
+
+    for row in candidate_rows:
         if row.row_id in current_ids:
             continue
         if not buffer_zone.intersects(row.geometry):
@@ -159,61 +168,77 @@ def bridge_long_gaps_with_neighbors(
 
     candidates: list[tuple[float, str, int, str, int, LineString]] = []
 
-    for i in range(len(endpoints)):
+    # Build spatial index over all row geometries for corridor and neighbor queries
+    row_tree = STRtree([r.geometry for r in rows]) if rows else None
+
+    # Accelerated candidate pair search with cKDTree
+    pts_array = np.array([ep[2] for ep in endpoints], dtype=np.float64)
+    if len(pts_array) > 0:
+        kdtree = cKDTree(pts_array)
+        candidate_pairs = sorted(kdtree.query_pairs(config.max_gap_distance_m))
+    else:
+        candidate_pairs = []
+
+    for i, j in candidate_pairs:
         id_a, side_a, pt_a, t_a = endpoints[i]
-        for j in range(i + 1, len(endpoints)):
-            id_b, side_b, pt_b, t_b = endpoints[j]
-            if id_a == id_b:
+        id_b, side_b, pt_b, t_b = endpoints[j]
+        if id_a == id_b:
+            continue
+
+        delta = np.array([pt_b[0] - pt_a[0], pt_b[1] - pt_a[1]], dtype=float)
+        dist = float(np.linalg.norm(delta))
+        if dist < config.min_gap_distance_m or dist > config.max_gap_distance_m:
+            continue
+
+        u_ab = delta / dist
+        facing_a = float(np.dot(t_a, u_ab))
+        facing_b = float(np.dot(t_b, -u_ab))
+        if facing_a < config.min_facing_cos or facing_b < config.min_facing_cos:
+            continue
+
+        colinear = float(abs(np.dot(t_a, t_b)))
+        if colinear < config.min_colinearity_cos:
+            continue
+
+        # Check transverse offset
+        lat_a = _transverse_distance(pt_b, pt_a, t_a)
+        lat_b = _transverse_distance(pt_a, pt_b, t_b)
+        if max(lat_a, lat_b) > max_transverse:
+            continue
+
+        connector = LineString([pt_a, pt_b])
+
+        # Check vetoes against other rows
+        crosses_other = False
+        if row_tree is not None:
+            hit_indices = row_tree.query(connector.buffer(safe_corridor))
+            other_rows = [rows[int(idx)] for idx in hit_indices]
+        else:
+            other_rows = list(row_map.values())
+
+        for other_row in other_rows:
+            if other_row.row_id in (id_a, id_b):
+                continue
+            if connector.crosses(other_row.geometry) or connector.distance(other_row.geometry) < safe_corridor:
+                crosses_other = True
+                break
+        if crosses_other:
+            continue
+
+        # If gap is long, verify that a parallel neighbor is present as physical support
+        if dist > config.require_neighbor_support_above_m:
+            has_support = _has_parallel_neighbor_support(
+                pt_a, pt_b, rows, {id_a, id_b}, spacing_m, neighbor_window, spatial_tree=row_tree
+            )
+            if not has_support:
                 continue
 
-            delta = np.array([pt_b[0] - pt_a[0], pt_b[1] - pt_a[1]], dtype=float)
-            dist = float(np.linalg.norm(delta))
-            if dist < config.min_gap_distance_m or dist > config.max_gap_distance_m:
-                continue
+        # Quality metric (lower is better): distance + lateral deviation penalty
+        score = dist + 2.0 * max(lat_a, lat_b) - 2.0 * (facing_a + facing_b)
+        candidates.append((score, id_a, side_a, id_b, side_b, connector))
 
-            u_ab = delta / dist
-            facing_a = float(np.dot(t_a, u_ab))
-            facing_b = float(np.dot(t_b, -u_ab))
-            if facing_a < config.min_facing_cos or facing_b < config.min_facing_cos:
-                continue
-
-            colinear = float(abs(np.dot(t_a, t_b)))
-            if colinear < config.min_colinearity_cos:
-                continue
-
-            # Check transverse offset
-            lat_a = _transverse_distance(pt_b, pt_a, t_a)
-            lat_b = _transverse_distance(pt_a, pt_b, t_b)
-            if max(lat_a, lat_b) > max_transverse:
-                continue
-
-            connector = LineString([pt_a, pt_b])
-
-            # Check vetoes against other rows
-            crosses_other = False
-            for other_id, other_row in row_map.items():
-                if other_id in (id_a, id_b):
-                    continue
-                if connector.crosses(other_row.geometry) or connector.distance(other_row.geometry) < safe_corridor:
-                    crosses_other = True
-                    break
-            if crosses_other:
-                continue
-
-            # If gap is long, verify that a parallel neighbor is present as physical support
-            if dist > config.require_neighbor_support_above_m:
-                has_support = _has_parallel_neighbor_support(
-                    pt_a, pt_b, rows, {id_a, id_b}, spacing_m, neighbor_window
-                )
-                if not has_support:
-                    continue
-
-            # Quality metric (lower is better): distance + lateral deviation penalty
-            score = dist + 2.0 * max(lat_a, lat_b) - 2.0 * (facing_a + facing_b)
-            candidates.append((score, id_a, side_a, id_b, side_b, connector))
-
-    # Sort candidates by best score
-    candidates.sort(key=lambda c: c[0])
+    # Sort candidates by best score (with deterministic tie-breaking)
+    candidates.sort(key=lambda c: (c[0], c[1], c[2], c[3], c[4]))
 
     # Greedy 1-to-1 matching
     used_endpoints: set[tuple[str, int]] = set()
@@ -325,10 +350,17 @@ def _find_nearest_neighbors_terminal_headings(
     k_neighbors: int,
     max_search_m: float,
     tangent_len: float,
+    spatial_tree: Any | None = None,
 ) -> list[float]:
     """Gather terminal azimuths of k nearest neighboring rows near target_point."""
     distances: list[tuple[float, float]] = []  # (dist, azimuth_deg)
-    for r in all_rows:
+    if spatial_tree is not None:
+        hit_indices = spatial_tree.query(target_point.buffer(max_search_m))
+        candidate_rows = [all_rows[int(idx)] for idx in hit_indices]
+    else:
+        candidate_rows = all_rows
+
+    for r in candidate_rows:
         if r.row_id == target_row_id:
             continue
         d = r.geometry.distance(target_point)
@@ -383,6 +415,7 @@ def extend_to_boundary_with_consensus(
 
     extended_rows: list[RowRecord] = []
     extension_count = 0
+    row_tree = STRtree([r.geometry for r in rows]) if rows else None
 
     for r in rows:
         coords = list(r.geometry.coords)
@@ -406,7 +439,13 @@ def extend_to_boundary_with_consensus(
 
             # 1. Neighbor consensus heading: collect headings of nearby neighbor rows
             neighbor_headings = _find_nearest_neighbors_terminal_headings(
-                pt, r.row_id, rows, config.boundary_consensus_neighbors, neighbor_search, tangent_len
+                pt,
+                r.row_id,
+                rows,
+                config.boundary_consensus_neighbors,
+                neighbor_search,
+                tangent_len,
+                spatial_tree=row_tree,
             )
 
             # Own tangent
@@ -470,7 +509,13 @@ def extend_to_boundary_with_consensus(
 
             # Check vetoes against other rows
             crosses = False
-            for other in rows:
+            if row_tree is not None:
+                hit_indices = row_tree.query(extension_segment.buffer(safe_corridor))
+                other_rows = [rows[int(idx)] for idx in hit_indices]
+            else:
+                other_rows = rows
+
+            for other in other_rows:
                 if other.row_id == r.row_id:
                     continue
                 if extension_segment.crosses(other.geometry) or extension_segment.distance(other.geometry) < safe_corridor:

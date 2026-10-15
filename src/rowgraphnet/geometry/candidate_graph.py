@@ -73,7 +73,17 @@ def _crosses_observed(
     source_a: str,
     source_b: str,
     segments: Iterable[ExtractedSegment],
+    spatial_tree: Any = None,
 ) -> bool:
+    if spatial_tree is not None and isinstance(segments, (list, tuple)):
+        indices = spatial_tree.query(connector)
+        for idx in indices:
+            seg = segments[idx]
+            if seg.segment_id in {source_a, source_b}:
+                continue
+            if connector.intersects(seg.geometry):
+                return True
+        return False
     for segment in segments:
         if segment.segment_id in {source_a, source_b}:
             continue
@@ -174,6 +184,9 @@ def generate_candidates(
     if not math.isfinite(radius) or radius <= 0:
         raise ValueError("search radius must be positive and finite")
     tangent_support = min(radius, spacing.median_m)
+    from shapely import STRtree
+
+    segments_tree = STRtree([s.geometry for s in segments]) if segments else None
     endpoints: list[tuple[ExtractedSegment, int, Point, np.ndarray]] = []
     for segment in sorted(segments, key=lambda item: item.segment_id):
         points = segment.endpoints
@@ -226,6 +239,7 @@ def generate_candidates(
                 segment_a.segment_id,
                 segment_b.segment_id,
                 segments,
+                spatial_tree=segments_tree,
             ):
                 continue
             # The endpoint head represents evidence of a *true physical end*.
