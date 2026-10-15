@@ -694,6 +694,8 @@ def infer(
                 roi_crs=roi_file_crs,
             )
             working_path = output_dir / "_working" / f"metric_input_talhao_{idx}.tif"
+            typer.echo(f"  [1/4] Preparando cena métrica...")
+            import sys; sys.stdout.flush()
             prepared_i = prepare_metric_scene(source_i, working_path, overwrite=True)
 
             # Verify CRS consistency across talhões
@@ -710,6 +712,8 @@ def infer(
                     fg=typer.colors.YELLOW,
                 )
 
+            typer.echo(f"  [2/4] Executando predição neural na GPU (tiles Hann-blended)...")
+            sys.stdout.flush()
             prediction_i = engine.predict(prepared_i.working)
 
             if roi_is_field_boundary:
@@ -727,6 +731,8 @@ def infer(
                 metric_fb_i = None
                 boundary_source = None
 
+            typer.echo(f"  [3/4] Vetorizando predições e reparando caminhos (A* otimizado + STRtree)...")
+            sys.stdout.flush()
             result_i = postprocess_prediction(
                 prediction_i,
                 model_version=metadata.model_version,
@@ -738,9 +744,11 @@ def infer(
             n_valid = len(result_i.refinement.rows)
             n_uncertain = len(result_i.refinement.uncertain_rows)
             n_repairs = len(result_i.refinement.repairs)
-            typer.echo(
-                f"  Válidas: {n_valid} | Incertas: {n_uncertain} | Reparos: {n_repairs}"
+            typer.secho(
+                f"  Válidas: {n_valid} | Incertas: {n_uncertain} | Reparos: {n_repairs}",
+                fg=typer.colors.GREEN,
             )
+            sys.stdout.flush()
 
             all_rows.extend(result_i.refinement.rows)
             all_repairs.extend(result_i.refinement.repairs)
