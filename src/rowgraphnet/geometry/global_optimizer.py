@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 from shapely.geometry import LineString
+from shapely.strtree import STRtree
 
 from rowgraphnet.domain import CandidateConnection, RepairPath
 
@@ -40,17 +42,30 @@ def _conflict_pairs(
     paths: dict[str, RepairPath],
 ) -> set[frozenset[str]]:
     conflicts: set[frozenset[str]] = set()
-    for index, first in enumerate(candidates):
-        first_endpoints = set(first.endpoint_keys)
-        for second in candidates[index + 1 :]:
-            if first_endpoints.intersection(second.endpoint_keys):
-                conflicts.add(frozenset((first.candidate_id, second.candidate_id)))
-                continue
-            if _geometries_conflict(
-                _connection_geometry(first, paths),
-                _connection_geometry(second, paths),
-            ):
-                conflicts.add(frozenset((first.candidate_id, second.candidate_id)))
+    if not candidates:
+        return conflicts
+
+    # 1. Endpoint collisions (O(N) via index map instead of O(N^2))
+    endpoint_to_candidates: dict[Any, list[str]] = {}
+    for candidate in candidates:
+        for ep in candidate.endpoint_keys:
+            endpoint_to_candidates.setdefault(ep, []).append(candidate.candidate_id)
+
+    for cand_ids in endpoint_to_candidates.values():
+        if len(cand_ids) > 1:
+            for i in range(len(cand_ids)):
+                id_i = cand_ids[i]
+                for j in range(i + 1, len(cand_ids)):
+                    conflicts.add(frozenset((id_i, cand_ids[j])))
+
+    # 2. Geometric intersections (O(N log N) via STRtree instead of O(N^2))
+    geoms = [_connection_geometry(c, paths) for c in candidates]
+    tree = STRtree(geoms)
+    intersections = tree.query(geoms, predicate="intersects")
+    for i, j in zip(intersections[0], intersections[1]):
+        if i < j:
+            conflicts.add(frozenset((candidates[i].candidate_id, candidates[j].candidate_id)))
+
     return conflicts
 
 
@@ -166,6 +181,11 @@ def optimize_connections(
             eligible.append(candidate)
     eligible.sort(key=lambda item: (-utilities[item.candidate_id], item.candidate_id))
     conflicts = _conflict_pairs(eligible, path_lookup)
+    conflict_map: dict[str, set[str]] = {}
+    for pair in conflicts:
+        u, v = tuple(pair)
+        conflict_map.setdefault(u, set()).add(v)
+        conflict_map.setdefault(v, set()).add(u)
 
     best_selection: list[CandidateConnection] = []
     best_objective = 0.0
@@ -175,10 +195,8 @@ def optimize_connections(
         selected_ids: set[str],
         adjacency: dict[str, set[str]],
     ) -> bool:
-        if any(
-            frozenset((candidate.candidate_id, selected_id)) in conflicts
-            for selected_id in selected_ids
-        ):
+        cand_conflicts = conflict_map.get(candidate.candidate_id)
+        if cand_conflicts is not None and not cand_conflicts.isdisjoint(selected_ids):
             return False
         if candidate.is_boundary_extension:
             return True
